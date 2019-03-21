@@ -19,8 +19,7 @@ __all__ = ["read_icrf1", "read_icrf2", "read_icrf3"]
 
 
 # -----------------------------  FUNCTIONS -----------------------------
-def read_icrf1(icrf1_file="/Users/Neo/Astronomy/Data/catalogs/icrf/"
-               "rsc95r01.dat"):
+def read_icrf1(icrf1_file="catalogs/rsc95r01.dat"):
     """Read the ICRF1 catalog
 
     Parameter
@@ -75,7 +74,7 @@ def read_icrf1(icrf1_file="/Users/Neo/Astronomy/Data/catalogs/icrf/"
     return icrf1
 
 
-def read_icrf2(icrf2_file="/Users/Neo/Astronomy/Data/catalogs/icrf/icrf2.dat"):
+def read_icrf2(icrf2_file="catalogs/icrf2.dat"):
     """
     """
 
@@ -136,7 +135,7 @@ def read_icrf3(icrf3_file=None, wv="sx"):
         data in the catalog
     """
 
-    data_dir = "/Users/Neo/Astronomy/Data/catalogs/icrf"
+    data_dir = "catalogs"
 
     if icrf3_file is None:
         if wv == "sx" or wv == "SX":
