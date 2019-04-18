@@ -285,7 +285,6 @@ def jac_mat_deg01(RA, DE, fit_type="full"):
         parr3 = concatenate((par1_r3, par2_r3), axis=0)
 
         # transpose of Jacobian matrix.
-        # JacMatT = np.vstack((parr1, parr2, parr3))
         N = parr1.size
         JacMatT = concatenate(
             (parr1.reshape(1, N), parr2.reshape(1, N), parr3.reshape(1, N)),
@@ -476,7 +475,7 @@ def vsh_deg01_solve(dRA, dDE, e_dRA, e_dDE, RA, DE, cov=None, fit_type="full"):
         estimaation of (d1, d2, d3, r1, r2, r3) in uas
     sig : array of float
         uncertainty of x in uas
-    corrmat : matrix
+    corr_mat : matrix
         matrix of correlation coefficient.
     '''
 
@@ -533,13 +532,13 @@ def vsh_deg01_solve(dRA, dDE, e_dRA, e_dDE, RA, DE, cov=None, fit_type="full"):
     sig = np.sqrt(pcov.diagonal())
 
     # Correlation coefficient.
-    corrmat = np.array([pcov[i, j] / sig[i] / sig[j]
-                        for j in range(len(x))
-                        for i in range(len(x))])
-    corrmat.resize((len(x), len(x)))
+    corr_mat = np.array([pcov[i, j] / sig[i] / sig[j]
+                         for j in range(len(x))
+                         for i in range(len(x))])
+    corr_mat.resize((len(x), len(x)))
 
     # Return the result.
-    return x, sig, corrmat
+    return x, sig, corr_mat
 
 
 # ----------------------------------------------------
@@ -618,12 +617,12 @@ def vsh_deg01_fitting(dRA, dDE, RA, DE, e_dRA=None, e_dDE=None,
     wrmsDE = calc_wrms(dDE)
     stdDE = np.std(dDE)
     print("# apriori statistics (weighted)\n"
-          "#         mean for RA: %10.3f mas\n"
-          "#         wrms for RA: %10.3f mas\n"
-          "#          std for RA: %10.3f mas\n"
-          "#        mean for Dec: %10.3f mas\n"
-          "#        wrms for Dec: %10.3f mas\n"
-          "#         std for Dec: %10.3f mas\n" %
+          "#         mean for RA: %10.3f \n"
+          "#         wrms for RA: %10.3f \n"
+          "#          std for RA: %10.3f \n"
+          "#        mean for Dec: %10.3f \n"
+          "#        wrms for Dec: %10.3f \n"
+          "#         std for Dec: %10.3f \n" %
           (meanRA, wrmsRA, stdRA, meanDE, wrmsDE, stdDE), file=flog)
 
     # Calculate the reduced Chi-square
@@ -706,12 +705,12 @@ def vsh_deg01_fitting(dRA, dDE, RA, DE, e_dRA=None, e_dDE=None,
     stdDE = np.std(dDEres)
 
     print("# posteriori statistics  of vsh01 fit (weighted)\n"
-          "#         mean for RA: %10.3f mas\n"
-          "#          rms for RA: %10.3f mas\n"
-          "#          std for RA: %10.3f mas\n"
-          "#        mean for Dec: %10.3f mas\n"
-          "#         rms for Dec: %10.3f mas\n"
-          "#         std for Dec: %10.3f mas\n" %
+          "#         mean for RA: %10.3f \n"
+          "#          rms for RA: %10.3f \n"
+          "#          std for RA: %10.3f \n"
+          "#        mean for Dec: %10.3f \n"
+          "#         rms for Dec: %10.3f \n"
+          "#         std for Dec: %10.3f \n" %
           (meanRA, wrmsRA, stdRA, meanDE, wrmsDE, stdDE), file=flog)
 
     # Calculate the reduced Chi-square

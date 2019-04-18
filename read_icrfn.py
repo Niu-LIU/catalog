@@ -12,8 +12,9 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 import numpy as np
 import sys
+
 # My modules
-from .pos_err import pos_err_calc
+from pos_err import pos_err_calc
 
 __all__ = ["read_icrf1", "read_icrf2", "read_icrf3"]
 
@@ -186,4 +187,8 @@ def read_icrf3(icrf3_file=None, wv="sx"):
 
     return icrf3
 
+
+# -------------------------------- MAIN --------------------------------
+if __name__ == '__main__':
+    pass
 # --------------------------------- END --------------------------------
