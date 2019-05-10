@@ -14,14 +14,14 @@ __all__ = ["smooth_by_dec", "smooth_by_time"]
 
 
 # -----------------------------  FUNCTIONS -----------------------------
-def smooth_by_dec(dec, err, interv_size=50):
+def smooth_by_dec(dec, sig_pos_max, interv_size=50):
     """Calculate the smoothed standard error as a function of declination
 
     Parameters
     ----------
     dec : array_like of float type
         declination in degree
-    err : array_like of float type
+    sig_pos_max : array_like of float type
         positional uncertainty (ellpise major axis) in mas
     interv_size : int
         number of source in a subset, default is 50.
@@ -37,7 +37,7 @@ def smooth_by_dec(dec, err, interv_size=50):
     # Sort the data according to the declination
     ind = np.argsort(dec)
     dec_sort = np.take(dec, ind)
-    poserr_sort = np.take(err, ind)
+    poserr_sort = np.take(sig_pos_max, ind)
 
     # Then we calculate the median ellpise major axis for subset of 50 sources.
     if dec_sort.size <= interv_size:
@@ -118,4 +118,4 @@ def smooth_by_time(t, x, tb=None, te=None, ts=0.1):
 
 
 if __name__ == "__main__":
-    print("Nothing to do")
+    dec_smoothed_err(dec, sig_pos_max, interv_size=50)

@@ -14,13 +14,14 @@ import numpy as np
 import sys
 
 # My modules
-from pos_err import pos_err_calc
+from my_progs.catalog.pos_err import pos_err_calc
 
 __all__ = ["read_icrf1", "read_icrf2", "read_icrf3"]
 
 
 # -----------------------------  FUNCTIONS -----------------------------
-def read_icrf1(icrf1_file="catalogs/rsc95r01.dat"):
+def read_icrf1(icrf1_file="/Users/Neo/Astronomy/data/catalogs/icrf/"
+               "rsc95r01.dat"):
     """Read the ICRF1 catalog
 
     Parameter
@@ -38,7 +39,7 @@ def read_icrf1(icrf1_file="catalogs/rsc95r01.dat"):
     icrf1 = Table.read(icrf1_file,
                        format="ascii.fixed_width_no_header",
                        names=["icrf_name", "iers_name", "type", "si_s", "si_x",
-                              "ra_error", "dec_error", "ra_dec_corr",
+                              "ra_err", "dec_err", "ra_dec_corr",
                               "mean_obs", "beg_obs", "end_obs",
                               "nb_sess", "nb_del"],
                        col_starts=[5, 24, 34, 35, 37, 77, 87,
@@ -59,23 +60,23 @@ def read_icrf1(icrf1_file="catalogs/rsc95r01.dat"):
     icrf1.add_columns([ra, dec], indexes=[3, 3])
 
     # Add unit information
-    icrf1["ra_error"] = icrf1["ra_error"] * 15e3 * np.cos(ra_dec.dec.rad)
-    icrf1["ra_error"].unit = u.mas
-    icrf1["dec_error"].unit = u.arcsec
-    icrf1["dec_error"] = icrf1["dec_error"].to(u.mas)
+    icrf1["ra_err"] = icrf1["ra_err"] * 15e3 * np.cos(ra_dec.dec.rad)
+    icrf1["ra_err"].unit = u.mas
+    icrf1["dec_err"].unit = u.arcsec
+    icrf1["dec_err"] = icrf1["dec_err"].to(u.mas)
 
     # Calculate the semi-major axis of error ellipse
     pos_err = pos_err_calc(
-        icrf1["ra_error"], icrf1["dec_error"], icrf1["ra_dec_corr"].filled())
+        icrf1["ra_err"], icrf1["dec_err"], icrf1["ra_dec_corr"].filled())
 
     # Add the semi-major axis of error ellipse to the table
-    icrf1.add_column(pos_err, name="pos_error", index=9)
-    icrf1["pos_error"].unit = u.mas
+    icrf1.add_column(pos_err, name="pos_err", index=9)
+    icrf1["pos_err"].unit = u.mas
 
     return icrf1
 
 
-def read_icrf2(icrf2_file="catalogs/icrf2.dat"):
+def read_icrf2(icrf2_file="/Users/Neo/Astronomy/data/catalogs/icrf/icrf2.dat"):
     """
     """
 
@@ -83,7 +84,7 @@ def read_icrf2(icrf2_file="catalogs/icrf2.dat"):
     icrf2 = Table.read(icrf2_file,
                        format="ascii.fixed_width_no_header",
                        names=["icrf_name", "ivs_name", "iers_name", "type",
-                              "ra_error", "dec_error", "ra_dec_corr",
+                              "ra_err", "dec_err", "ra_dec_corr",
                               "mean_obs", "beg_obs", "end_obs",
                               "nb_sess", "nb_del"],
                        col_starts=[0, 17, 25, 35, 73, 84,
@@ -104,18 +105,18 @@ def read_icrf2(icrf2_file="catalogs/icrf2.dat"):
     icrf2.add_columns([ra, dec], indexes=[3, 3])
 
     # Add unit information
-    icrf2["ra_error"] = icrf2["ra_error"] * 15e3 * np.cos(ra_dec.dec.rad)
-    icrf2["ra_error"].unit = u.mas
-    icrf2["dec_error"].unit = u.arcsec
-    icrf2["dec_error"] = icrf2["dec_error"].to(u.mas)
+    icrf2["ra_err"] = icrf2["ra_err"] * 15e3 * np.cos(ra_dec.dec.rad)
+    icrf2["ra_err"].unit = u.mas
+    icrf2["dec_err"].unit = u.arcsec
+    icrf2["dec_err"] = icrf2["dec_err"].to(u.mas)
 
     # Calculate the semi-major axis of error ellipse
     pos_err = pos_err_calc(
-        icrf2["ra_error"], icrf2["dec_error"], icrf2["ra_dec_corr"])
+        icrf2["ra_err"], icrf2["dec_err"], icrf2["ra_dec_corr"])
 
     # Add the semi-major axis of error ellipse to the table
-    icrf2.add_column(pos_err, name="pos_error", index=9)
-    icrf2["pos_error"].unit = u.mas
+    icrf2.add_column(pos_err, name="pos_err", index=9)
+    icrf2["pos_err"].unit = u.mas
 
     return icrf2
 
@@ -136,7 +137,7 @@ def read_icrf3(icrf3_file=None, wv="sx"):
         data in the catalog
     """
 
-    data_dir = "catalogs"
+    data_dir = "/Users/Neo/Astronomy/data/catalogs/icrf"
 
     if icrf3_file is None:
         if wv == "sx" or wv == "SX":
@@ -152,7 +153,7 @@ def read_icrf3(icrf3_file=None, wv="sx"):
     icrf3 = Table.read(icrf3_file,
                        format="ascii.fixed_width", data_start=16,
                        names=["icrf_name", "iers_name", "type",
-                              "ra_error", "dec_error", "ra_dec_corr",
+                              "ra_err", "dec_err", "ra_dec_corr",
                               "mean_obs", "beg_obs", "end_obs",
                               "nb_sess", "nb_del"],
                        col_starts=[5, 25, 35, 83, 98,
@@ -173,17 +174,17 @@ def read_icrf3(icrf3_file=None, wv="sx"):
     icrf3.add_columns([ra, dec], indexes=[3, 3])
 
     # Add unit information
-    icrf3["ra_error"] = icrf3["ra_error"] * 15e3 * np.cos(ra_dec.dec.rad)
-    icrf3["ra_error"].unit = u.mas
-    icrf3["dec_error"].unit = u.arcsec
-    icrf3["dec_error"] = icrf3["dec_error"].to(u.mas)
+    icrf3["ra_err"] = icrf3["ra_err"] * 15e3 * np.cos(ra_dec.dec.rad)
+    icrf3["ra_err"].unit = u.mas
+    icrf3["dec_err"].unit = u.arcsec
+    icrf3["dec_err"] = icrf3["dec_err"].to(u.mas)
 
     # Calculate the semi-major axis of error ellipse
     pos_err = pos_err_calc(
-        icrf3["ra_error"], icrf3["dec_error"], icrf3["ra_dec_corr"])
+        icrf3["ra_err"], icrf3["dec_err"], icrf3["ra_dec_corr"])
 
     # Add the semi-major axis of error ellipse to the table
-    icrf3.add_column(pos_err, name="pos_error", index=9)
+    icrf3.add_column(pos_err, name="pos_err", index=9)
 
     return icrf3
 
