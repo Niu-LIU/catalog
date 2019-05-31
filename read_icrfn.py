@@ -64,10 +64,11 @@ def read_icrf1(icrf1_file="/Users/Neo/Astronomy/data/catalogs/icrf/"
     icrf1["ra_err"].unit = u.mas
     icrf1["dec_err"].unit = u.arcsec
     icrf1["dec_err"] = icrf1["dec_err"].to(u.mas)
+    icrf1["ra_dec_corr"] = icrf1["ra_dec_corr"].filled(0)
 
     # Calculate the semi-major axis of error ellipse
     pos_err = pos_err_calc(
-        icrf1["ra_err"], icrf1["dec_err"], icrf1["ra_dec_corr"].filled())
+        icrf1["ra_err"], icrf1["dec_err"], icrf1["ra_dec_corr"])
 
     # Add the semi-major axis of error ellipse to the table
     icrf1.add_column(pos_err, name="pos_err", index=9)

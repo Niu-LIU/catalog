@@ -14,7 +14,7 @@ __all__ = ["smooth_by_dec", "smooth_by_time"]
 
 
 # -----------------------------  FUNCTIONS -----------------------------
-def smooth_by_dec(dec, err, interv_size=50):
+def smooth_by_dec(dec, err, binsize=50):
     """Calculate the smoothed standard error as a function of declination
 
     Parameters
@@ -23,7 +23,7 @@ def smooth_by_dec(dec, err, interv_size=50):
         declination in degree
     err : array_like of float type
         positional uncertainty (ellpise major axis) in mas
-    interv_size : int
+    binsize : int
         number of source in a subset, default is 50.
 
     Returns
@@ -38,24 +38,26 @@ def smooth_by_dec(dec, err, interv_size=50):
     ind = np.argsort(dec)
     dec_sort = np.take(dec, ind)
     poserr_sort = np.take(err, ind)
+    num = dec_sort.size
 
     # Then we calculate the median ellpise major axis for subset of 50 sources.
-    if dec_sort.size <= interv_size:
+    if num <= binsize:
         print("# Too smaller sample!")
         exit()
     else:
-        interv_num = dec_sort.size - interv_size + 1
+        interv_num = num - binsize + 1
 
-    med_dec = np.zeros(interv_num)
-    med_poserr = np.zeros(interv_num)
+    med_dec = np.zeros_like(dec)
+    med_poserr = np.zeros_like(err)
 
-    for i in range(interv_num):
-        ind_b, ind_e = i, i + interv_size
-        deci = dec_sort[ind_b: ind_e]
-        pos_erri = poserr_sort[ind_b: ind_e]
+    for i in range(binsize):
+        med_dec[i] = np.median(dec_sort[:i])
+        med_poserr[i] = np.median(poserr_sort[:i])
 
-        med_dec[i] = np.median(deci)
-        med_poserr[i] = np.median(pos_erri)
+    for i in range(num - binsize):
+        ind_b, ind_e = i, i + binsize
+        med_dec[i] = np.median(dec_sort[ind_b: ind_e])
+        med_poserr[i] = np.median(poserr_sort[ind_b: ind_e])
 
     return med_dec, med_poserr
 
