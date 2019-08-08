@@ -56,32 +56,32 @@ def read_dr2_qso(dr2_file="/Users/Neo/Astronomy/data/catalogs/"
     # Read Gaia DR2 IERS quasar data
     gdr2 = Table.read(dr2_file)
 
-    # Only the positional information are kept.
-    gdr2.keep_columns(["iers_name",
-                       "source_id",
-                       "ra",
-                       "ra_error",
-                       "dec",
-                       "dec_error",
-                       "parallax",
-                       "parallax_error",
-                       "pmra",
-                       "pmra_error",
-                       "pmdec",
-                       "pmdec_error",
-                       "ra_dec_corr",
-                       "ra_parallax_corr",
-                       "ra_pmra_corr",
-                       "ra_pmdec_corr",
-                       "dec_parallax_corr",
-                       "dec_pmra_corr",
-                       "dec_pmdec_corr",
-                       "parallax_pmra_corr",
-                       "parallax_pmdec_corr",
-                       "pmra_pmdec_corr",
-                       "phot_g_mean_mag",
-                       "phot_bp_mean_mag",
-                       "phot_rp_mean_mag"])
+    # # Only the positional information are kept.
+    # gdr2.keep_columns(["iers_name",
+    #                    "source_id",
+    #                    "ra",
+    #                    "ra_error",
+    #                    "dec",
+    #                    "dec_error",
+    #                    "parallax",
+    #                    "parallax_error",
+    #                    "pmra",
+    #                    "pmra_error",
+    #                    "pmdec",
+    #                    "pmdec_error",
+    #                    "ra_dec_corr",
+    #                    "ra_parallax_corr",
+    #                    "ra_pmra_corr",
+    #                    "ra_pmdec_corr",
+    #                    "dec_parallax_corr",
+    #                    "dec_pmra_corr",
+    #                    "dec_pmdec_corr",
+    #                    "parallax_pmra_corr",
+    #                    "parallax_pmdec_corr",
+    #                    "pmra_pmdec_corr",
+    #                    "phot_g_mean_mag",
+    #                    "phot_bp_mean_mag",
+    #                    "phot_rp_mean_mag"])
 
     # Rename the column names
     gdr2.rename_column("ra_error", "ra_err")
@@ -101,8 +101,8 @@ def read_dr2_qso(dr2_file="/Users/Neo/Astronomy/data/catalogs/"
     return gdr2
 
 
-def read_dr2_allwise(dr2_file="/Users/Neo/Astronomy/Data/catalogs/"
-                     "Gaia_DR2/gaiadr2_iers.fits"):
+def read_dr2_allwise(dr2_file="/Users/Neo/Astronomy/data/catalogs/"
+                     "gaia/dr2/gaiadr2_iers.fits"):
     """Read the positional information of Gaia DR2 auxiliary IERS catalog.
 
     """
@@ -110,32 +110,32 @@ def read_dr2_allwise(dr2_file="/Users/Neo/Astronomy/Data/catalogs/"
     # Read Gaia DR2 IERS quasar data
     gdr2 = Table.read(dr2_file)
 
-    # Only the positional information are kept.
-    gdr2.keep_columns(["iers_name",
-                       "source_id",
-                       "ra",
-                       "ra_error",
-                       "dec",
-                       "dec_error",
-                       "parallax",
-                       "parallax_error",
-                       "pmra",
-                       "pmra_error",
-                       "pmdec",
-                       "pmdec_error",
-                       "ra_dec_corr",
-                       "ra_parallax_corr",
-                       "ra_pmra_corr",
-                       "ra_pmdec_corr",
-                       "dec_parallax_corr",
-                       "dec_pmra_corr",
-                       "dec_pmdec_corr",
-                       "parallax_pmra_corr",
-                       "parallax_pmdec_corr",
-                       "pmra_pmdec_corr",
-                       "phot_g_mean_mag",
-                       "phot_bp_mean_mag",
-                       "phot_rp_mean_mag"])
+    # # Only the positional information are kept.
+    # gdr2.keep_columns(["iers_name",
+    #                    "source_id",
+    #                    "ra",
+    #                    "ra_error",
+    #                    "dec",
+    #                    "dec_error",
+    #                    "parallax",
+    #                    "parallax_error",
+    #                    "pmra",
+    #                    "pmra_error",
+    #                    "pmdec",
+    #                    "pmdec_error",
+    #                    "ra_dec_corr",
+    #                    "ra_parallax_corr",
+    #                    "ra_pmra_corr",
+    #                    "ra_pmdec_corr",
+    #                    "dec_parallax_corr",
+    #                    "dec_pmra_corr",
+    #                    "dec_pmdec_corr",
+    #                    "parallax_pmra_corr",
+    #                    "parallax_pmdec_corr",
+    #                    "pmra_pmdec_corr",
+    #                    "phot_g_mean_mag",
+    #                    "phot_bp_mean_mag",
+    #                    "phot_rp_mean_mag"])
 
     # Rename the column names
     gdr2.rename_column("ra_error", "ra_err")

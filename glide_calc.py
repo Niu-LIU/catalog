@@ -18,7 +18,8 @@ from astropy.coordinates import SkyCoord
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import cos, sin, pi
-
+# My module
+from .vsh_deg1_cor import vsh_deg01_fitting
 
 __all__ = ["glide_gen", "glide_calc", "GA_glide_decomposed",
            "glide_field_gen"]
@@ -58,8 +59,10 @@ def glide_gen(g=5.8, RAdeg=266.416667, DCdeg=-28.992222, err=None):
     g2 = g * sin(RArad) * cos(DCrad)
     g3 = g * sin(DCrad)
 
+    gvec = np.array([g1, g2, g3])
+
     if err is None:
-        return np.array([g1, g2, g3])
+        return gvec
     else:
         # Calculate the uncertainties.
         M = np.array([
@@ -79,7 +82,7 @@ def glide_gen(g=5.8, RAdeg=266.416667, DCdeg=-28.992222, err=None):
 
         errn = np.sqrt(np.dot(M**2, err**2))
 
-        return np.array([g1, g2, g3]), errn
+        return gvec, errn
 
 
 def glide_calc(gv, err_gv=None):
@@ -298,6 +301,48 @@ def glide_plot(gv, output=None, fig_title=None):
         plt.show()
     else:
         plt.savefig(output)
+
+
+def rotation_from_ga(cat):
+    """Rotation of the celestial frame induced by the Galactic aberration (GA).
+
+    Parameter
+    --------
+    cat: astropy.table.Table object
+        contain at least "ra" and "dec" column
+
+    Returns
+    --------
+    rot: np.array of (3,)
+        rotational angles around three axis
+    sig: np.array of (3,)
+        formal error of the rotation
+    cov: np.array of (3,3)
+        covariance matrix
+    """
+
+    radeg = np.array(cat["ra"])
+    decdeg = np.array(cat["dec"])
+
+    rarad = np.deg2rad(radeg)
+    decrad = np.deg2rad(decdeg)
+
+    # GA constant (Liu et al. 2012)
+    raGC = 266.4
+    decGC = -28.4
+    # ICRF3 adopted value=
+    gmod = 5.8
+
+    # Generate a dipolar field
+    gvec = glide_gen(gmod, raGC, decGC)
+    pmra, pmdec = glide_field_gen(radeg, decdeg, gvec)
+
+    # Fit the rotation
+    rot, sig, cov, _, _, _ = vsh_deg01_fitting(pmra, pmdec, rarad, decrad,
+                                               elim_flag=None,
+                                               fit_type="rotation")
+
+    return rot, sig, cov
 
 
 def test_code(flag):
