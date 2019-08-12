@@ -103,8 +103,14 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+<<<<<<< HEAD
 # Added
 .ipynb_checkpoints/
+=======
+# Some files
+.ipynb_checkpoints/
+build/
+>>>>>>> 0f4a06edabd2d532c3ee5d4271dfd857513c3a7d
 IPython-*
 *.fits*
 *.gz
@@ -114,3 +120,7 @@ IPython-*
 *.tex
 exec*.ipynb
 .DS_Store
+<<<<<<< HEAD
+=======
+notes/
+>>>>>>> 0f4a06edabd2d532c3ee5d4271dfd857513c3a7d
