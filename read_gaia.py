@@ -12,12 +12,13 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 import numpy as np
 import sys
+from sys import platform as _platform
 
 # My modules
 from my_progs.catalog.pos_err import pos_err_calc
 
 
-__all__ = ["read_dr1_qso", "read_dr2_qso", "read_dr2_allwise"]
+__all__ = ["read_dr1_qso", "read_dr2_iers", "read_dr2_allwise"]
 
 
 # -----------------------------  FUNCTIONS -----------------------------
@@ -106,7 +107,7 @@ def read_dr1_qso(dr1qsofile=None):
     return gdr1
 
 
-def read_dr2_qso(dr2qsofile=None):
+def read_dr2_iers(dr2qsofile=None):
     """Read the positional information of Gaia DR2 auxiliary IERS catalog.
 
     Parameter
@@ -190,8 +191,10 @@ def read_dr2_allwise(dr2qsofile=None):
         datadir = get_datadir()
         dr2qsofile="{}/dr2/gaiadr2_qso_all.fits".format(datadir)
 
+    gdr2 = read_dr2_iers(dr2qsofile)
+
     # Read Gaia DR2 IERS quasar data
-    gdr2 = Table.read(dr2_file)
+    # gdr2 = Table.read(dr2_file)
 
     # # Only the positional information are kept.
     # gdr2.keep_columns(["iers_name",
@@ -220,20 +223,20 @@ def read_dr2_allwise(dr2qsofile=None):
     #                    "phot_bp_mean_mag",
     #                    "phot_rp_mean_mag"])
 
-    # Rename the column names
-    gdr2.rename_column("ra_error", "ra_err")
-    gdr2.rename_column("dec_error", "dec_err")
-    gdr2.rename_column("parallax_error", "parallax_err")
-    gdr2.rename_column("pmra_error", "pmra_err")
-    gdr2.rename_column("pmdec_error", "pmdec_err")
-
-    # Calculate the semi-major axis of error ellipse
-    pos_err = pos_err_calc(
-        gdr2["ra_err"], gdr2["dec_err"], gdr2["ra_dec_corr"])
-
-    # Add the semi-major axis of error ellipse to the table
-    gdr2.add_column(pos_err, name="pos_err", index=6)
-    gdr2["pos_err"].unit = u.mas
+    # # Rename the column names
+    # gdr2.rename_column("ra_error", "ra_err")
+    # gdr2.rename_column("dec_error", "dec_err")
+    # gdr2.rename_column("parallax_error", "parallax_err")
+    # gdr2.rename_column("pmra_error", "pmra_err")
+    # gdr2.rename_column("pmdec_error", "pmdec_err")
+    #
+    # # Calculate the semi-major axis of error ellipse
+    # pos_err = pos_err_calc(
+    #     gdr2["ra_err"], gdr2["dec_err"], gdr2["ra_dec_corr"])
+    #
+    # # Add the semi-major axis of error ellipse to the table
+    # gdr2.add_column(pos_err, name="pos_err", index=6)
+    # gdr2["pos_err"].unit = u.mas
 
     return gdr2
 # --------------------------------- END --------------------------------
