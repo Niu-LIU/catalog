@@ -102,3 +102,15 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Added
+.ipynb_checkpoints/
+IPython-*
+*.fits*
+*.gz
+*.pdf
+*.jpg
+*.pyc
+*.tex
+exec*.ipynb
+.DS_Store
