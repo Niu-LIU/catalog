@@ -36,32 +36,21 @@ def get_datadir():
 
     # Check the type of OS
     if _platform == "linux" or _platform == "linux2":
-       # linux
-       osid = 0
+        # linux
+        datadir = "/home/neo/Astronomy/data/catalogs/icrf"
     elif _platform == "darwin":
-       # MAC OS X
-       osid = 1
+        # MAC OS X
+        datadir = "/Users/Neo/Astronomy/data/catalogs/icrf"
     elif _platform == "win32":
-       # Windows
-       osid = 2
-    elif _platform == "win64":
-        # Windows 64-bit
-       osid = 3
-
-    if osid == 0:
-        datadir="/home/neo/Astronomy/data/catalogs/icrf"
-    elif osid == 1:
-        datadir="/Users/Neo/Astronomy/data/catalogs/icrf"
-    elif osid == 2:
-        # icrf1file="/Users/Neo/Astronomy/data/catalogs/icrf"
+        # Windows
         print("Not implemented yet")
         exit()
-    elif osid == 3:
-        # icrf1file="/Users/Neo/Astronomy/data/catalogs/icrf"
+    elif _platform == "win64":
+        # Windows 64-bit
         print("Not implemented yet")
         exit()
     else:
-        print("What kind of OS do you use?")
+        print("Weird! What kind of OS do you use?")
         exit()
 
     return datadir
@@ -83,7 +72,7 @@ def read_icrf1(icrf1file=None):
 
     if icrf1file is None:
         datadir = get_datadir()
-        icrf1file="{}/rsc95r01.dat".format(datadir)
+        icrf1file = "{}/rsc95r01.dat".format(datadir)
 
     # Read ICRF1 catalog
     icrf1 = Table.read(icrf1file,
@@ -143,7 +132,7 @@ def read_icrf2(icrf2file=None):
 
     if icrf2file is None:
         datadir = get_datadir()
-        icrf2file="{}/icrf2.dat".format(datadir)
+        icrf2file = "{}/icrf2.dat".format(datadir)
 
     # Read ICRF2 catalog
     icrf2 = Table.read(icrf2file,
@@ -252,6 +241,7 @@ def read_icrf3(icrf3_file=None, wv="sx"):
     icrf3.add_column(pos_err, name="pos_err", index=9)
 
     return icrf3
+
 
 # -------------------------------- MAIN --------------------------------
 if __name__ == '__main__':
