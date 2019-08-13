@@ -37,22 +37,22 @@ def get_datadir():
 
     # Check the type of OS
     if _platform == "linux" or _platform == "linux2":
-       # linux
-       osid = 0
+        # linux
+        osid = 0
     elif _platform == "darwin":
-       # MAC OS X
-       osid = 1
+        # MAC OS X
+        osid = 1
     elif _platform == "win32":
-       # Windows
-       osid = 2
+        # Windows
+        osid = 2
     elif _platform == "win64":
         # Windows 64-bit
-       osid = 3
+        osid = 3
 
     if osid == 0:
-        datadir="/home/neo/Astronomy/data/catalogs/gaia"
+        datadir = "/home/neo/Astronomy/data/catalogs/gaia"
     elif osid == 1:
-        datadir="/Users/Neo/Astronomy/data/catalogs/gaia"
+        datadir = "/Users/Neo/Astronomy/data/catalogs/gaia"
     elif osid == 2:
         # icrf1file="/Users/Neo/Astronomy/data/catalogs/gaia"
         print("Not implemented yet")
@@ -66,6 +66,7 @@ def get_datadir():
         exit()
 
     return datadir
+
 
 def read_dr1_qso(dr1qsofile=None):
     """Read the position information of Gaia DR1 quasar auxiliary solution.
@@ -83,7 +84,7 @@ def read_dr1_qso(dr1qsofile=None):
 
     if dr1qsofile is None:
         datadir = get_datadir()
-        dr1qsofile="{}/dr1/qso.dat".format(datadir)
+        dr1qsofile = "{}/dr1/qso.dat".format(datadir)
 
     gdr1 = Table.read(dr1qsofile, format="ascii.fixed_width_no_header",
                       names=["solution_id", "source_id", "ref_epoch",
@@ -123,37 +124,48 @@ def read_dr2_iers(dr2qsofile=None):
 
     if dr2qsofile is None:
         datadir = get_datadir()
-        dr2qsofile="{}/dr2/gaiadr2_iers.fits".format(datadir)
+        dr2qsofile = "{}/dr2/gaiadr2_iers.fits".format(datadir)
 
     # Read Gaia DR2 IERS quasar data
     gdr2 = Table.read(dr2qsofile)
 
+    # There are two small errore in the colomn iers_name in this sample
+    # 0548+37A --> 0548+377
+    # 1954+188 --> 1954+187
+
+    oldnames = ["0548+37A", "1954+188"]
+    newnames = ["0548+377", "1954+187"]
+
+    for oldname, newname in zip(oldnames, newnames):
+        idx = np.where(gdr2["iers_name"] == oldname)[0][0]
+        gdr2[idx]["iers_name"] = newname
+
     # Only the positional information are kept.
-    # gdr2.keep_columns(["iers_name",
-    #                    "source_id",
-    #                    "ra",
-    #                    "ra_error",
-    #                    "dec",
-    #                    "dec_error",
-    #                    "parallax",
-    #                    "parallax_error",
-    #                    "pmra",
-    #                    "pmra_error",
-    #                    "pmdec",
-    #                    "pmdec_error",
-    #                    "ra_dec_corr",
-    #                    "ra_parallax_corr",
-    #                    "ra_pmra_corr",
-    #                    "ra_pmdec_corr",
-    #                    "dec_parallax_corr",
-    #                    "dec_pmra_corr",
-    #                    "dec_pmdec_corr",
-    #                    "parallax_pmra_corr",
-    #                    "parallax_pmdec_corr",
-    #                    "pmra_pmdec_corr",
-    #                    "phot_g_mean_mag",
-    #                    "phot_bp_mean_mag",
-    #                    "phot_rp_mean_mag"])
+    gdr2.keep_columns(["iers_name",
+                       "source_id",
+                       "ra",
+                       "ra_error",
+                       "dec",
+                       "dec_error",
+                       "parallax",
+                       "parallax_error",
+                       "pmra",
+                       "pmra_error",
+                       "pmdec",
+                       "pmdec_error",
+                       "ra_dec_corr",
+                       "ra_parallax_corr",
+                       "ra_pmra_corr",
+                       "ra_pmdec_corr",
+                       "dec_parallax_corr",
+                       "dec_pmra_corr",
+                       "dec_pmdec_corr",
+                       "parallax_pmra_corr",
+                       "parallax_pmdec_corr",
+                       "pmra_pmdec_corr",
+                       "phot_g_mean_mag",
+                       "phot_bp_mean_mag",
+                       "phot_rp_mean_mag"])
 
     # Rename the column names
     gdr2.rename_column("ra_error", "ra_err")
@@ -189,7 +201,7 @@ def read_dr2_allwise(dr2qsofile=None):
 
     if dr2qsofile is None:
         datadir = get_datadir()
-        dr2qsofile="{}/dr2/gaiadr2_qso_all.fits".format(datadir)
+        dr2qsofile = "{}/dr2/gaiadr2_qso_all.fits".format(datadir)
 
     gdr2 = read_dr2_iers(dr2qsofile)
 
@@ -239,4 +251,8 @@ def read_dr2_allwise(dr2qsofile=None):
     # gdr2["pos_err"].unit = u.mas
 
     return gdr2
+
+
+if __name__ == "__main__":
+    read_dr2_iers()
 # --------------------------------- END --------------------------------
