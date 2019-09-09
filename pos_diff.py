@@ -13,12 +13,12 @@ from functools import reduce
 import numpy as np
 from numpy import cos, sqrt
 
-__all__ = ["nor_sep", "pos_diff_calc", "pa_calc",
-           "radio_cat_diff_calc"]
+__all__ = ["nor_sep_calc", "pos_diff_calc", "pa_calc",
+           "radio_cat_diff_calc", ]
 
 
 # -----------------------------  FUNCTIONS -----------------------------
-def nor_sep(dRA, dRA_err, dDC, dDC_err, C):
+def nor_sep_calc(dRA, dRA_err, dDC, dDC_err, C):
     '''Calculate the normalized seperation.
 
     Parameters
@@ -100,8 +100,8 @@ def pos_diff_calc(RA1, RA1_err, DC1, DC1_err, Cor1,
     corf = cov / (dRA_err * dDC_err)
 
     # Normalised separation
-    ang_sep, X_a, X_d, X = nor_sep(dRA, dRA_err,
-                                   dDC, dDC_err, corf)
+    ang_sep, X_a, X_d, X = nor_sep_calc(dRA, dRA_err,
+                                        dDC, dDC_err, corf)
 
     # return ang_sep, X_a, X_d, X
     return dRA, dDC, dRA_err, dDC_err, cov, ang_sep, X_a, X_d, X
@@ -153,10 +153,12 @@ def radio_cat_diff_calc(table1, table2, sou_name="source_name",
     Parameters
     ----------
     table1/table2 : astropy.table.Table object
+        Table of radi source position
 
     Returns
     -------
-
+    com_sou : astropy.table.Table object
+        Table of positional difference
     """
 
     # Table label
@@ -213,7 +215,7 @@ def radio_cat_diff_calc(table1, table2, sou_name="source_name",
     com_sou["dra_ddec_cov"].unit = None
 
     # Normalised separation
-    ang_sep, X_a, X_d, X = nor_sep(
+    ang_sep, X_a, X_d, X = nor_sep_calc(
         com_sou["dra"], com_sou["dra_err"],
         com_sou["ddec"], com_sou["ddec_err"], corf)
 
