@@ -108,31 +108,38 @@ def pos_diff_calc(RA1, RA1_err, DC1, DC1_err, Cor1,
 
 
 def pa_calc(dra, ddec):
-    """Calcaulte the position angle (East of North) of positional offsets.
+    """Calculate positional angle from positional offset.
 
-    Parameters
-    ----------
-    dra/ddec : array
-        positional offset in RA/decl.
+    Ax is used for plot and Ay for output value (positional angle).
 
-    Return
-    ------
-    pa : array
-        position angles in degree.
+
+    Parametes
+    ---------
+    dra : ndarray
+        positional difference in R.A.(times cos(decl.))
+    ddec : ndarray
+        positional difference in declination
+
+    Returns
+    -------
+    Ax : ndarray
+        Angle (in degree) of positional offset vector towards to x-axis count-clockwisely
+    Ay : ndarray
+        Angle (in degree) of positional offset vector towards to y-axis clockwisely
     """
 
-    pa = np.zeros_like(dra)
+    # Direction of positional offset vector from the x-axis count-clockwisely
+    # in degree
+    Ax = np.rad2deg(np.arctan2(ddec, dra))
 
-    for i, (drai, ddeci) in enumerate(zip(dra, ddec)):
-        ang_sep = np.sqrt(drai**2 + ddeci**2)
-        pai = np.rad2deg(np.arccos(ddeci/ang_sep))
+    # Note this angle Ax is counted towards the x-axis
+    # If we count the angle from the positive direction of the y-axis clockwisely,
+    #       - 90 - Ax, 0 <= Ax <= 90
+    # Ay =
+    #       - 450 - Ax, 90 < Ax < 360
+    Ay = np.where(Ax < 90, 90 - Ax, 450 - Ax)
 
-        if drai < 0:
-            pai = 360 - pai
-
-        pa[i] = pai
-
-    return pa
+    return Ax, Ay
 
 
 def radio_cat_diff_calc(table1, table2, sou_name="source_name",

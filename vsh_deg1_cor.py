@@ -34,7 +34,8 @@ N.Liu, 27/09/2018 : add a new output "gof" of the function "vsh_deg01_fitting";
                     change the function name: "VSHdeg01" -> "vsh_deg01_solve",
                              "VSHdeg01_fitting" -> "vsh_deg01_fitting";
                     change the order of inputs for the function "vsh_deg01_fitting";
-
+N.Liu, 09/09/2019: add new argument 'return_aux' to function
+                    'vsh_deg01_fitting'
 
 """
 
@@ -43,7 +44,7 @@ from numpy import sin, cos, pi, concatenate
 import sys
 # My modules
 from .stats_calc import calc_wrms, calc_chi2_2d, calc_gof, calc_mean
-from .pos_diff import nor_sep
+from .pos_diff import nor_sep_calc
 
 
 __all__ = ["residual_calc01", "vsh_deg01_solve", "vsh_deg01_fitting"]
@@ -549,7 +550,7 @@ def vsh_deg01_solve(dRA, dDE, e_dRA, e_dDE, RA, DE, cov=None, fit_type="full"):
 def vsh_deg01_fitting(dRA, dDE, RA, DE, e_dRA=None, e_dDE=None,
                       cov=None, flog=None,
                       elim_flag="sigma", N=3.0, ang_sep=None, X=None,
-                      fit_type="full"):
+                      fit_type="full", return_aux=False):
     '''1st-degree vsh fitting.
 
     Parameters
@@ -579,6 +580,8 @@ def vsh_deg01_fitting(dRA, dDE, RA, DE, e_dRA=None, e_dDE=None,
         "full" for full 6 parameters
         "rotation" for only 3 rotation parameters
         "glide" for only 3 glide parameters
+   return_aux : Boolean
+        If true, return the post-fit residuals besides the parameter estimates
 
     Returns
     ----------
@@ -608,14 +611,13 @@ def vsh_deg01_fitting(dRA, dDE, RA, DE, e_dRA=None, e_dDE=None,
         gof_known = False
 
     # Calculate the apriori wrms
-    meanRA = calc_mean(dRA)
-    wrmsRA = calc_wrms(dRA)
-    stdRA = np.std(dRA)
-    meanDE = calc_mean(dDE)
-    wrmsDE = calc_wrms(dDE)
-    stdDE = np.std(dDE)
-
     if flog is not None:
+        meanRA = calc_mean(dRA)
+        wrmsRA = calc_wrms(dRA)
+        stdRA = np.std(dRA)
+        meanDE = calc_mean(dDE)
+        wrmsDE = calc_wrms(dDE)
+        stdDE = np.std(dDE)
         print("# apriori statistics (weighted)\n"
               "#         mean for RA: %10.3f \n"
               "#         wrms for RA: %10.3f \n"
@@ -626,8 +628,8 @@ def vsh_deg01_fitting(dRA, dDE, RA, DE, e_dRA=None, e_dDE=None,
               (meanRA, wrmsRA, stdRA, meanDE, wrmsDE, stdDE), file=flog)
 
     # Calculate the reduced Chi-square
-    apr_chi2 = calc_chi2_2d(dRA, e_dRA, dDE, e_dDE, cov, reduced=True)
     if flog is not None:
+        apr_chi2 = calc_chi2_2d(dRA, e_dRA, dDE, e_dDE, cov, reduced=True)
         print("# apriori reduced Chi-square for: %10.3f" % apr_chi2, file=flog)
 
     # Now we can use different criteria of elimination.
@@ -669,7 +671,7 @@ def vsh_deg01_fitting(dRA, dDE, RA, DE, e_dRA=None, e_dDE=None,
                 print("# Number of sample: %d" % (dRA.size-num2),
                       file=flog)
     else:
-        ang_sep, X_a, X_d, X = nor_sep(dRA, dDE, e_dRA, e_dDE, cov)
+        ang_sep, X_a, X_d, X = nor_sep_calc(dRA, dDE, e_dRA, e_dDE, cov)
 
         if elim_flag is "angsep":
             ind_go = elim_angsep(ang_sep)
@@ -697,15 +699,15 @@ def vsh_deg01_fitting(dRA, dDE, RA, DE, e_dRA=None, e_dDE=None,
     # dRAres, dDEres RA, dDE, RA, DE, xn)
     dRAres, dDEres = residual_calc01(dRA, dDE, RA, DE, x, fit_type)
 
-    # Calculate the posteriori wrms
-    meanRA = calc_mean(dRAres)
-    wrmsRA = calc_wrms(dRAres)
-    stdRA = np.std(dRAres)
-    meanDE = calc_mean(dDEres)
-    wrmsDE = calc_wrms(dDEres)
-    stdDE = np.std(dDEres)
-
     if flog is not None:
+        # Calculate the posteriori wrms
+        meanRA = calc_mean(dRAres)
+        wrmsRA = calc_wrms(dRAres)
+        stdRA = np.std(dRAres)
+        meanDE = calc_mean(dDEres)
+        wrmsDE = calc_wrms(dDEres)
+        stdDE = np.std(dDEres)
+
         print("# posteriori statistics  of vsh01 fit (weighted)\n"
               "#         mean for RA: %10.3f \n"
               "#          rms for RA: %10.3f \n"
@@ -724,15 +726,19 @@ def vsh_deg01_fitting(dRA, dDE, RA, DE, e_dRA=None, e_dDE=None,
               pos_chi2_rdc, file=flog)
 
     # Calculate the goodness-of-fit
-    pos_chi2 = calc_chi2_2d(dRAres, e_dRA, dDEres, e_dDE, cov)
     if flog is not None:
+        pos_chi2 = calc_chi2_2d(dRAres, e_dRA, dDEres, e_dDE, cov)
         print("# goodness-of-fit is %10.3f" %
               calc_gof(2*dRAres.size-1-M, pos_chi2), file=flog)
 
     # Rescale the formal errors
     sig = sig * np.sqrt(pos_chi2_rdc)
 
-    return x, sig, cofmat, ind_outl, dRAres, dDEres
+    # Return the result
+    if return_aux:
+        return x, sig, cofmat, ind_outl, dRAres, dDEres
+    else:
+        return x, sig, cofmat
 
 
 # ----------------------------------------------------

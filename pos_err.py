@@ -81,23 +81,24 @@ def error_ellipse(ra_err, dec_err, ra_dec_corr):
 
     eig_val, eig_vec = eig(cov_mat)
 
-    M2 = np.max(eig_val)
-    m2 = np.min(eig_val)
+    if eig_val[0] > eig_val[1]:
+        M2 = eig_val[0]
+        m2 = eig_val[1]
+        vec_M = eig_vec[:, 0]
+    else:
+        M2 = eig_val[1]
+        m2 = eig_val[0]
+        vec_M = eig_vec[:, 1]
 
     M, m = np.sqrt(M2), np.sqrt(m2)
 
-    index = np.where(eig_val == M2)[0][0]
+    # Ensure that eigenvector locates in the 1st or 4th quadrant
+    if vec_M[0] < 0:
+        vec_M = -vec_M
 
-    vec_M = eig_vec[:, index]
+    pa0 = np.rad2deg(np.arctan2(vec_M[1], vec_M[0]))
 
-    nor_vec = np.array([0, 1])
-    # nor_vec = np.array([1, 0])
-    pa0 = np.rad2deg(np.arccos(np.dot(vec_M, nor_vec)))
-
-    if vec_M[0] > 0:
-        pa = 180 - pa0
-    else:
-        pa = pa0
+    pa = np.where(pa0 <= 90, 90 - pa0, 450 - pa0)
 
     return M, m, pa
 
@@ -144,7 +145,7 @@ def error_ellipse2(ra_err, dec_err, ra_dec_corr):
     else:
         pa = 360 - theta0
 
-    return eema3, eena3, pa
+    return eema, eena, pa
 
 
 def main():
