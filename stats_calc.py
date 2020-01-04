@@ -41,42 +41,12 @@ def calc_mean(x, err=None):
         mean = np.mean(x)
     else:
         p = 1. / err
-        mean = np.sqrt(np.dot(x*p, p) / np.dot(p, p))
+        mean = np.dot(x*p, p) / np.dot(p, p)
 
     return mean
 
 
 def calc_wrms(x, err=None):
-    '''Calculate the (weighted) wrms of x series.
-
-    Weighted root mean square
-    wrms = sqrt(sum( xi^2/erri^2 ) / sum( 1.0/erri^2 ))
-         if weighted,
-         = sqrt(sum( xi^2/erri^2 ) / (N-1))
-         otherwise.
-
-    Parameters
-    ----------
-    x : array, float
-        Series
-    err : array, float, default is None.
-
-    Returns
-    ----------
-    wrms : float
-        weighted rms
-    '''
-
-    if err is None:
-        wrms = np.sqrt(np.dot(x, x) / (x.size - 1))
-    else:
-        p = 1. / err
-        wrms = np.sqrt(np.dot(x*p, x*p) / np.dot(p, p))
-
-    return wrms
-
-
-def calc_wrms2(x, err=None):
     '''Calculate the (weighted) wrms of x series after removing
     the bias.
 
@@ -112,7 +82,37 @@ def calc_wrms2(x, err=None):
         p = 1. / err
         mean = np.dot(x, p**2) / np.dot(p, p)
         xn = (x - mean) * p
-        wrms = np.sqrt(np.dot(xn*p, xn*p) / np.dot(p, p))
+        wrms = np.sqrt(np.dot(xn, xn) / np.dot(p, p))
+
+    return wrms
+
+
+def calc_wrms2(x, err=None):
+    '''Calculate the (weighted) wrms of x series.
+
+    Weighted root mean square
+    wrms = sqrt(sum( xi^2/erri^2 ) / sum( 1.0/erri^2 ))
+         if weighted,
+         = sqrt(sum( xi^2/erri^2 ) / (N-1))
+         otherwise.
+
+    Parameters
+    ----------
+    x : array, float
+        Series
+    err : array, float, default is None.
+
+    Returns
+    ----------
+    wrms : float
+        weighted rms
+    '''
+
+    if err is None:
+        wrms = np.sqrt(np.dot(x, x) / (x.size - 1))
+    else:
+        p = 1. / err
+        wrms = np.sqrt(np.dot(x*p, x*p) / np.dot(p, p))
 
     return wrms
 

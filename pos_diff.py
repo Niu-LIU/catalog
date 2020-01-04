@@ -123,21 +123,22 @@ def pa_calc(dra, ddec):
     Returns
     -------
     Ax : ndarray
-        Angle (in degree) of positional offset vector towards to x-axis count-clockwisely
+        Angle (in degree) of positional offset vector towards to x-axis anti-clockwisely
     Ay : ndarray
-        Angle (in degree) of positional offset vector towards to y-axis clockwisely
+        Angle (in degree) of positional offset vector towards to y-axis anti-clockwisely
     """
 
     # Direction of positional offset vector from the x-axis count-clockwisely
     # in degree
     Ax = np.rad2deg(np.arctan2(ddec, dra))
+    Ax = np.where(Ax < 0, Ax + 360, Ax)
 
     # Note this angle Ax is counted towards the x-axis
     # If we count the angle from the positive direction of the y-axis clockwisely,
     #       - 90 - Ax, 0 <= Ax <= 90
     # Ay =
     #       - 450 - Ax, 90 < Ax < 360
-    Ay = np.where(Ax < 90, 90 - Ax, 450 - Ax)
+    Ay = np.where(Ax < 90, Ax+270, Ax-90)
 
     return Ax, Ay
 

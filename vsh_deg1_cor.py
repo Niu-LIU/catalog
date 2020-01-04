@@ -613,19 +613,23 @@ def vsh_deg01_fitting(dRA, dDE, RA, DE, e_dRA=None, e_dDE=None,
     # Calculate the apriori wrms
     if flog is not None:
         meanRA = calc_mean(dRA)
-        wrmsRA = calc_wrms(dRA)
+        rmsRA = calc_wrms(dRA)
+        wrmsRA = calc_wrms(dRA, e_dRA)
         stdRA = np.std(dRA)
         meanDE = calc_mean(dDE)
-        wrmsDE = calc_wrms(dDE)
+        rmsDE = calc_wrms(dDE)
+        wrmsDE = calc_wrms(dDE, e_dDE)
         stdDE = np.std(dDE)
         print("# apriori statistics (weighted)\n"
               "#         mean for RA: %10.3f \n"
+              "#          rms for RA: %10.3f \n"
               "#         wrms for RA: %10.3f \n"
               "#          std for RA: %10.3f \n"
               "#        mean for Dec: %10.3f \n"
+              "#         rms for Dec: %10.3f \n"
               "#        wrms for Dec: %10.3f \n"
-              "#         std for Dec: %10.3f \n" %
-              (meanRA, wrmsRA, stdRA, meanDE, wrmsDE, stdDE), file=flog)
+              "#         std for Dec: %10.3f   " %
+              (meanRA, rmsRA, wrmsRA, stdRA, meanDE, rmsDE, wrmsDE, stdDE), file=flog)
 
     # Calculate the reduced Chi-square
     if flog is not None:
@@ -702,33 +706,36 @@ def vsh_deg01_fitting(dRA, dDE, RA, DE, e_dRA=None, e_dDE=None,
     if flog is not None:
         # Calculate the posteriori wrms
         meanRA = calc_mean(dRAres)
-        wrmsRA = calc_wrms(dRAres)
+        rmsRA = calc_wrms(dRAres)
+        wrmsRA = calc_wrms(dRAres, e_dRA)
         stdRA = np.std(dRAres)
         meanDE = calc_mean(dDEres)
-        wrmsDE = calc_wrms(dDEres)
+        rmsDE = calc_wrms(dDEres)
+        wrmsDE = calc_wrms(dDEres, e_dDE)
         stdDE = np.std(dDEres)
-
         print("# posteriori statistics  of vsh01 fit (weighted)\n"
               "#         mean for RA: %10.3f \n"
               "#          rms for RA: %10.3f \n"
+              "#         wrms for RA: %10.3f \n"
               "#          std for RA: %10.3f \n"
               "#        mean for Dec: %10.3f \n"
               "#         rms for Dec: %10.3f \n"
-              "#         std for Dec: %10.3f \n" %
-              (meanRA, wrmsRA, stdRA, meanDE, wrmsDE, stdDE), file=flog)
+              "#        wrms for Dec: %10.3f \n"
+              "#         std for Dec: %10.3f   " %
+              (meanRA, rmsRA, wrmsRA, stdRA, meanDE, rmsDE, wrmsDE, stdDE), file=flog)
 
     # Calculate the reduced Chi-square
     M = 6
     pos_chi2_rdc = calc_chi2_2d(dRAres, e_dRA, dDEres, e_dDE, cov,
                                 reduced=True, num_fdm=2*dRAres.size-1-M)
     if flog is not None:
-        print("# posteriori reduced Chi-square for: %10.3f" %
+        print("# posteriori reduced Chi-square for: %10.3f\n" %
               pos_chi2_rdc, file=flog)
 
     # Calculate the goodness-of-fit
     if flog is not None:
         pos_chi2 = calc_chi2_2d(dRAres, e_dRA, dDEres, e_dDE, cov)
-        print("# goodness-of-fit is %10.3f" %
+        print("# goodness-of-fit is %10.3f\n" %
               calc_gof(2*dRAres.size-1-M, pos_chi2), file=flog)
 
     # Rescale the formal errors

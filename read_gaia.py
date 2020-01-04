@@ -38,31 +38,13 @@ def get_datadir():
     # Check the type of OS
     if _platform == "linux" or _platform == "linux2":
         # linux
-        osid = 0
+        datadir = "/home/neo/Astronomy/data/catalogs/gaia"
     elif _platform == "darwin":
         # MAC OS X
-        osid = 1
-    elif _platform == "win32":
-        # Windows
-        osid = 2
-    elif _platform == "win64":
-        # Windows 64-bit
-        osid = 3
-
-    if osid == 0:
-        datadir = "/home/neo/Astronomy/data/catalogs/gaia"
-    elif osid == 1:
         datadir = "/Users/Neo/Astronomy/data/catalogs/gaia"
-    elif osid == 2:
-        # icrf1file="/Users/Neo/Astronomy/data/catalogs/gaia"
+    elif _platform == "win32" or _platform == "win64":
+        # Windows
         print("Not implemented yet")
-        exit()
-    elif osid == 3:
-        # icrf1file="/Users/Neo/Astronomy/data/catalogs/gaia"
-        print("Not implemented yet")
-        exit()
-    else:
-        print("What kind of OS do you use?")
         exit()
 
     return datadir
@@ -165,7 +147,8 @@ def read_dr2_iers(dr2qsofile=None):
                        "pmra_pmdec_corr",
                        "phot_g_mean_mag",
                        "phot_bp_mean_mag",
-                       "phot_rp_mean_mag"])
+                       "phot_rp_mean_mag",
+                       "astrometric_n_obs_al"])
 
     # Rename the column names
     gdr2.rename_column("ra_error", "ra_err")
