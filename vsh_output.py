@@ -9,12 +9,13 @@ and covariance) into a text file or on screen.
 @author: Neo
 """
 
-
+from astropy.table import Table
+from astropy import units as u
 import numpy as np
 import sys
 
 __all__ = ["write_htable", "write_vtable",
-           "print_vsh_corr", "print_vsh_result""]
+           "print_vsh_corr", "print_vsh_result"]
 
 
 #################### Block of functions ####################
@@ -33,10 +34,13 @@ def init_parnames(parnb):
     """
 
     if parnb == 6:
-        parnames = np.array(["R1", "R2", "R3", "D1", "D2", "D3"])
+        parnames = np.array(["D1", "D2", "D3", "R1", "R2", "R3"])
     elif parnb == 16:
-        parnames = np.array(["R1", "R2", "R3", "D1", "D2", "D3",
+        parnames = np.array(["D1", "D2", "D3", "R1", "R2", "R3",
                              "E22R", "E22I", "E21R", "E21I", "E20",
+                             "M22R", "M22I", "M21R", "M21I", "M20"])
+    elif parnb == 10:
+        parnames = np.array(["E22R", "E22I", "E21R", "E21I", "E20",
                              "M22R", "M22I", "M21R", "M21I", "M20"])
     else:
         print("Sorry this length of array is not recongnized :-(")
@@ -46,13 +50,11 @@ def init_parnames(parnb):
 
 
 # ----------- Horizontal Table -------------------
-def write_htable(catnames, names, pmts, sigs, opt=sys.stdout, fmt="8.2f"):
+def write_htable(catnames, pmts, sigs, names=None, opt=sys.stdout, fmt="8.2f"):
     '''Print estmates and corresponding formal errors into a horizontal table.
 
     Parameters
     ----------
-    catnames : array of string
-        names or labels for catalogs
     names : array of string
         names or labels of parameters
     pmts : array of float
@@ -65,6 +67,9 @@ def write_htable(catnames, names, pmts, sigs, opt=sys.stdout, fmt="8.2f"):
         specifier of the output format
     '''
 
+    if names is None:
+        names = init_parnames(len(pmts[0]))
+
     # Table header
     head_line = []
     for name in names:
@@ -74,7 +79,7 @@ def write_htable(catnames, names, pmts, sigs, opt=sys.stdout, fmt="8.2f"):
     print("\\hline", file=opt)
 
     # data line
-    data_fmt = "  &$%+{0:s} \\pm %{0:s}$".format(fmt)
+    data_fmt = "  &${0:s} \\pm {0:s}$".format(fmt)
 
     for i in range(len(catnames)):
         data_line = ["{:10s}".format(catnames[i])]
@@ -134,6 +139,9 @@ def print_corr(names, parcorrs, deci_digit=2, included_one=True,
 
     parnb = names.size
 
+    print("\nCorrelation coefficient", file=opt)
+    print("---------------------------------------------------------", file=opt)
+
     # If the correlation matrix is an object of np.mat type,
     # convert it to np.ndarray
     if type(parcorrs) is np.mat or type(parcorrs) is np.matrix:
@@ -180,7 +188,7 @@ def print_corr(names, parcorrs, deci_digit=2, included_one=True,
 
 
 def print_vsh_corr(parcorrs, parnames=None,
-                   deci_digit=2, included_one=True, opt=sys.stdout):
+                   deci_digit=1, included_one=True, opt=sys.stdout):
     """Print the correlation coefficient of VSH02 parameters in the screen.
 
     Parameters
@@ -194,15 +202,16 @@ def print_vsh_corr(parcorrs, parnames=None,
         value equals to 1) or not. True for yes.
     """
 
-    parnb = parnames.size
-
     if parnames is None:
+        parnb = parcorrs[0].size
         if parnb == 6:
             parnames = np.array(["D1", "D2", "D3", "R1", "R2", "R3"])
         elif parnb == 16:
             parnames = np.array(["D1", "D2", "D3", "R1", "R2", "R3",
                                  "E22R", "E22I", "E21R", "E21I", "E20",
                                  "M22R", "M22I", "M21R", "M21I", "M20"])
+    else:
+        parnb = parnames.size
 
     # Check the shape of the matrix
     a, b = parcorrs.shape
@@ -214,7 +223,7 @@ def print_vsh_corr(parcorrs, parnames=None,
 
 
 def print_vsh_result(pmts, sigs, parcorrs,
-                     parnames=None, opt=sys.stdout, fmt="%8.2f"):
+                     parnames=None, opt=sys.stdout, fmt="%5.0f"):
     '''Print estmates and corresponding formal errors of vsh01 parameters.
 
     Parameters
@@ -236,12 +245,20 @@ def print_vsh_result(pmts, sigs, parcorrs,
     if parnames is None:
         parnames = init_parnames(parnb)
 
-    write_htable(parnames, pmts, sigs, opt, fmt)
+    tvsh = Table([parnames, pmts, sigs], names=[
+        "VSH parameter", "Estimate", "Error"])
+    tvsh["Estimate"].format = fmt
+    tvsh["Error"].format = fmt
+    tvsh["Estimate"].unit = u.uas
+    tvsh["Error"].unit = u.uas
+
+    print(tvsh, file=opt)
+
     print_vsh_corr(parcorrs, parnames,
-                   deci_digit=2, included_one=True, opt=opt)
+                   deci_digit=1, included_one=True, opt=opt)
 
 
-def save_vsh_result(pmts, sigs, ofile, fmt="%5.0f"):
+def save_vsh_result(pmts, sigs, ofile, parnames=None, fmt="%5.0f", comment=""):
     """Save the VSH results into a text file.
 
     Parameters
@@ -261,10 +278,13 @@ def save_vsh_result(pmts, sigs, ofile, fmt="%5.0f"):
     if parnames is None:
         parnames = init_parnames(parnb)
 
-    tvsh = Table([parnames, pmts, sigs], names=[
-        "Names", "Estimate", "Error"])
+    tvsh = Table([parnames, pmts, sigs],
+                 names=["Names", "Estimate", "Error"])
     tvsh["Estimate"].format = fmt
     tvsh["Error"].format = fmt
+    tvsh["Estimate"].unit = u.uas
+    tvsh["Error"].unit = u.uas
+    tvsh.meta["comment"] = comment
 
     tvsh.write(ofile, format="ascii", overwrite=True)
 
@@ -290,6 +310,7 @@ def write_textable(catnames, pmts, sigs, ofile, parnames=None, fmt="5.0f"):
         parnames = init_parnames(parnb)
 
     write_htable(catnames, parnames, pmts, sigs, ofile, fmt)
+
 
     # ------------------------- MAIN ---------------------------------------
 if __name__ == "__main__":

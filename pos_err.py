@@ -7,6 +7,7 @@ Created on Fri Sep 21 15:36:35 2018
 @author: Neo(liuniu@smail.nju.edu.cn)
 """
 
+import numpy as np
 from numpy import sqrt, sin, cos
 
 
@@ -57,7 +58,7 @@ def overall_error(ra_err, dec_err, ra_dec_corr):
     return overall_err
 
 
-def error_ellipse(ra_err, dec_err, ra_dec_corr):
+def error_ellipse(ra_err, dec_err, ra_dec_corr, anticw=False):
     """Calculate the ovrall formal uncertainty.
 
     ovrall formal uncertainty = sqrt(RA_err^2+Dec_err^2+C*RA_err*Dec_err)
@@ -92,13 +93,25 @@ def error_ellipse(ra_err, dec_err, ra_dec_corr):
 
     M, m = np.sqrt(M2), np.sqrt(m2)
 
-    # Ensure that eigenvector locates in the 1st or 4th quadrant
-    if vec_M[0] < 0:
-        vec_M = -vec_M
+    # Calculate the positi angle counted anti-colockwise from the declination axis
+    if vec_M[1] == 0:
+        if vec_M[0] > 0:
+            pa0 = 90
+        else:
+            pa0 = -90
+    else:
+        pa0 = np.rad2deg(np.arctan(vec_M[0]/vec_M[1]))
 
-    pa0 = np.rad2deg(np.arctan2(vec_M[1], vec_M[0]))
-
-    pa = np.where(pa0 <= 90, 90 - pa0, 450 - pa0)
+    if anticw:
+        if pa0 <= 0:
+            pa = -pa0
+        else:
+            pa = 180 - pa0
+    else:
+        if pa0 <= 0:
+            pa = 180 + pa0
+        else:
+            pa = pa0
 
     return M, m, pa
 
@@ -146,6 +159,114 @@ def error_ellipse2(ra_err, dec_err, ra_dec_corr):
         pa = 360 - theta0
 
     return eema, eena, pa
+
+
+def error_ellipse_array(ra_err, dec_err, ra_dec_corr, anticw=False):
+    """Calculate Parameters of error ellipse for a subset of objects
+
+    Parameters
+    ----------
+    ra_err/dec_err : 1-d array
+        formal uncertainty of RA/Dec
+    ra_dec_corr : 1-d array
+        correlation coeffient between RA and Dec, unitless.
+
+    Returns
+    ----------
+    M: 1-d array
+        semi-major axis of the error ellipse
+    m: 1-d array
+        semi-minor axis of the error ellipse
+    pa: 1-d array
+        the position angle of the major axis of the error ellipse
+    """
+
+    M = np.zeros_like(ra_err)
+    m = np.zeros_like(dec_err)
+    pa = np.zeros_like(ra_dec_corr)
+
+    for i in range(len(M)):
+        M[i], m[i], pa[i] = error_ellipse(ra_err[i], dec_err[i], ra_dec_corr[i], anticw=False)
+
+    return M, m, pa
+
+
+def eepa_calc(ra_err, dec_err, ra_dec_corr, anticw=False):
+    """Calculate the ovrall formal uncertainty.
+
+    ovrall formal uncertainty = sqrt(RA_err^2+Dec_err^2+C*RA_err*Dec_err)
+
+    Parameters
+    ----------
+    ra_err/dec_err : formal uncertainty of RA/Dec, usually in micro-as
+    ra_dec_corr : correlation coeffient between RA and Dec, unitless.
+
+    Returns
+    ----------
+    pa : the position angle of the major axis of the error ellipse
+    """
+
+    M, m, pa = error_ellipse(ra_err, dec_err, ra_dec_corr, anticw)
+
+    return pa
+
+
+def eepa_calc2(ra_err, dec_err, ra_dec_corr, anticw=False):
+    """Calculate the ovrall formal uncertainty.
+
+    ovrall formal uncertainty = sqrt(RA_err^2+Dec_err^2+C*RA_err*Dec_err)
+
+    Parameters
+    ----------
+    ra_err/dec_err : formal uncertainty of RA/Dec, usually in micro-as
+    ra_dec_corr : correlation coeffient between RA and Dec, unitless.
+
+    Returns
+    ----------
+    pa : the position angle of the major axis of the error ellipse
+    """
+
+    ##
+    # To check if their dimension is the same
+    ##
+
+    pa = np.zeros_like(ra_err)
+    for i in range(len(ra_err)):
+        pa[i] = eepa_calc_single(ra_err[i], dec_err[i], ra_dec_corr[i], anticw)
+
+    return pa
+
+
+def ellipse_shape_calc(M, m, pa, start_from_xaxis=False):
+    """Calculate the (x, y) position for an ellipse after rotation.
+
+    Parameters
+    ----------
+    M : float
+        major axis
+    m : floar
+        minor axis
+    pa : float
+        positional angle, degree reckoned from x- or y-axis.
+
+    Returns
+    -------
+    x1/y1 : ndarray of float
+    """
+
+    t = np.linspace(0, 2 * np.pi, 360)
+    x = M * cos(t)
+    y = m * sin(t)
+
+    if start_from_xaxis:
+        alpha = np.deg2rad(pa)
+    else:
+        alpha = np.deg2rad(90-pa)
+
+    x1 = x * cos(alpha) - y * sin(alpha)
+    y1 = x * sin(alpha) + y * cos(alpha)
+
+    return x1, y1
 
 
 def main():

@@ -90,6 +90,41 @@ def read_dr1_qso(dr1qsofile=None):
     return gdr1
 
 
+def modify_dr2_iers(dr2qsofile=None):
+    """Correct the wrong name in the Gaia-CRF2 subset.
+
+    Parameter
+    ---------
+    dr2qsofile : string
+        file name and path of the Gaia DR2 auxiliary IERS catalog
+
+    Return
+    ------
+    gdr2 : an astropy.Table object
+        data in the catalog
+    """
+
+    if dr2qsofile is None:
+        datadir = get_datadir()
+        dr2qsofile = "{}/dr2/gaiadr2_iers0.fits".format(datadir)
+
+    # Read Gaia DR2 IERS quasar data
+    gdr2 = Table.read(dr2qsofile)
+
+    # There are two small errore in the colomn iers_name in this sample
+    # 0548+37A --> 0548+377
+    # 1954+188 --> 1954+187
+
+    oldnames = ["0548+37A", "1954+188"]
+    newnames = ["0548+377", "1954+187"]
+
+    for oldname, newname in zip(oldnames, newnames):
+        idx = np.where(gdr2["iers_name"] == oldname)[0][0]
+        gdr2[idx]["iers_name"] = newname
+
+    gdr2.write(dr2qsofile, overwrite=True)
+
+
 def read_dr2_iers(dr2qsofile=None):
     """Read the positional information of Gaia DR2 auxiliary IERS catalog.
 
@@ -115,12 +150,12 @@ def read_dr2_iers(dr2qsofile=None):
     # 0548+37A --> 0548+377
     # 1954+188 --> 1954+187
 
-    oldnames = ["0548+37A", "1954+188"]
-    newnames = ["0548+377", "1954+187"]
-
-    for oldname, newname in zip(oldnames, newnames):
-        idx = np.where(gdr2["iers_name"] == oldname)[0][0]
-        gdr2[idx]["iers_name"] = newname
+    # oldnames = ["0548+37A", "1954+188"]
+    # newnames = ["0548+377", "1954+187"]
+    #
+    # for oldname, newname in zip(oldnames, newnames):
+    #     idx = np.where(gdr2["iers_name"] == oldname)[0][0]
+    #     gdr2[idx]["iers_name"] = newname
 
     # Only the positional information are kept.
     gdr2.keep_columns(["iers_name",
@@ -148,7 +183,9 @@ def read_dr2_iers(dr2qsofile=None):
                        "phot_g_mean_mag",
                        "phot_bp_mean_mag",
                        "phot_rp_mean_mag",
-                       "astrometric_n_obs_al"])
+                       "bp_rp",
+                       "astrometric_n_obs_al",
+                       "astrometric_matched_observations"])
 
     # Rename the column names
     gdr2.rename_column("ra_error", "ra_err")
@@ -237,5 +274,5 @@ def read_dr2_allwise(dr2qsofile=None):
 
 
 if __name__ == "__main__":
-    read_dr2_iers()
+    modify_dr2_iers()
 # --------------------------------- END --------------------------------

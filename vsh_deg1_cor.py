@@ -326,7 +326,7 @@ def jac_mat_deg01(RA, DE, fit_type="full"):
 
 # ---------------------------------------------------
 def vsh_func01(ra, dec, X, fit_type="full"):
-               # r1, r2, r3, g1, g2, g3):
+    # r1, r2, r3, g1, g2, g3):
     '''VSH function of the first degree.
 
     Parameters
@@ -412,6 +412,8 @@ def normal_matrix_calc(dRA, dDE, e_dRA, e_dDE, RA, DE,
                        cov=None, fit_type="full"):
     '''Calculate the normal matrix
 
+    Parameters
+    ----------
     dRA/dDE : array of float
         R.A.(*cos(Dec.))/Dec. differences in uas
     e_dRA/e_dDE : array of float

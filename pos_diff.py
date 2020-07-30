@@ -7,11 +7,14 @@ Created on Fri Sep 21 15:39:02 2018
 @author: Neo(liuniu@smail.nju.edu.cn)
 """
 
+from astropy.coordinates import SkyCoord
 from astropy.table import Table, join, Column
 from astropy import units as u
 from functools import reduce
 import numpy as np
 from numpy import cos, sqrt
+from math import hypot
+
 
 __all__ = ["nor_sep_calc", "pos_diff_calc", "pa_calc",
            "radio_cat_diff_calc", ]
@@ -36,6 +39,7 @@ def nor_sep_calc(dRA, dRA_err, dDC, dDC_err, C):
 
     # Angular seperations
     ang_sep = sqrt(dRA**2 + dDC**2)
+    # ang_sep = hypot(dRA, dDC) # Only used for scalar
 
     # Normalised coordinate difference
     X_a = dRA / dRA_err
@@ -46,12 +50,11 @@ def nor_sep_calc(dRA, dRA_err, dDC, dDC_err, C):
 
     for i, (X_ai, X_di, Ci) in enumerate(zip(X_a, X_d, C)):
         if Ci == -1.:
-            Ci = -0.99
-        if Ci == 1.0:
-            Ci = 0.99
+            Ci = -0.999
+        if Ci == 1.:
+            Ci = 0.999
 
-        wgt = np.linalg.inv(np.mat([[1, Ci],
-                                    [Ci, 1]]))
+        wgt = np.linalg.inv(np.mat([[1, Ci], [Ci, 1]]))
         Xmat = np.mat([X_ai, X_di])
         X[i] = sqrt(reduce(np.dot, (Xmat, wgt, Xmat.T)))
 
@@ -107,7 +110,7 @@ def pos_diff_calc(RA1, RA1_err, DC1, DC1_err, Cor1,
     return dRA, dDC, dRA_err, dDC_err, cov, ang_sep, X_a, X_d, X
 
 
-def pa_calc(dra, ddec):
+def pa_calc0(dra, ddec, anticw=False):
     """Calculate positional angle from positional offset.
 
     Ax is used for plot and Ay for output value (positional angle).
@@ -119,6 +122,8 @@ def pa_calc(dra, ddec):
         positional difference in R.A.(times cos(decl.))
     ddec : ndarray
         positional difference in declination
+    anticw : Boolean
+
 
     Returns
     -------
@@ -128,19 +133,93 @@ def pa_calc(dra, ddec):
         Angle (in degree) of positional offset vector towards to y-axis anti-clockwisely
     """
 
-    # Direction of positional offset vector from the x-axis count-clockwisely
-    # in degree
-    Ax = np.rad2deg(np.arctan2(ddec, dra))
-    Ax = np.where(Ax < 0, Ax + 360, Ax)
+    Ax = np.rad2deg(np.arctan2(ddec, dra))  # clockwise
+    Ay = np.rad2deg(np.arctan2(dra, ddec))  # clockwise
 
-    # Note this angle Ax is counted towards the x-axis
-    # If we count the angle from the positive direction of the y-axis clockwisely,
-    #       - 90 - Ax, 0 <= Ax <= 90
-    # Ay =
-    #       - 450 - Ax, 90 < Ax < 360
-    Ay = np.where(Ax < 90, Ax+270, Ax-90)
+    if anticw:
+        # anticlockwise
+        Ax = np.where(Ax < 0, 360 + Ax, Ax)
+        Ay = np.where(Ay < 0, -Ay, 360 - Ay)
+    else:
+        # clockwise
+        Ax = np.where(Ax < 0, -Ax, 360 - Ax)
+        Ay = np.where(Ay < 0, 360 + Ay, Ay)
 
     return Ax, Ay
+
+
+def pa_calc1(dra, ddec, anticw=False):
+    """Calculate positional angle from positional offset.
+
+    Ax is used for plot and Ay for output value (positional angle).
+
+    A new implementation.
+
+    Parametes
+    ---------
+    dra : ndarray
+        positional difference in R.A.(times cos(decl.))
+    ddec : ndarray
+        positional difference in declination
+    anticw : Boolean
+
+
+    Returns
+    -------
+    Ax : ndarray
+        Angle (in degree) of positional offset vector towards to x-axis anti-clockwisely
+    Ay : ndarray
+        Angle (in degree) of positional offset vector towards to y-axis anti-clockwisely
+    """
+
+    if anticw:
+        # anticlockwise
+        zx = dra + 1j * ddec
+        zy = ddec - 1j * dra
+
+        Ax = np.angle(zx, deg=True)
+        Ay = np.angle(zy, deg=True)
+    else:
+        # clockwise
+        zx = dra - 1j * ddec
+        zy = ddec + 1j * dra
+
+        Ax = np.angle(zx, deg=True)
+        Ay = np.angle(zy, deg=True)
+
+    Ax = np.where(Ax < 0, 360 + Ax, Ax)
+    Ay = np.where(Ay < 0, 360 + Ay, Ay)
+
+    return Ax, Ay
+
+
+def pa_calc(dra, ddec, anticw=False):
+    """Calculate positional angle from positional offset.
+
+    A new implementation.
+
+    Parametes
+    ---------
+    dra : ndarray
+        positional difference in R.A.(times cos(decl.))
+    ddec : ndarray
+        positional difference in declination
+    anticw : Boolean
+
+
+    Return
+    -------
+    PA : ndarray
+        Angle (in degree) of positional offset vector towards to y-axis anti-clockwisely
+    """
+
+    cen = SkyCoord(0*u.deg, 0*u.deg, frame="icrs")
+    oft = SkyCoord(dra*u.mas, ddec*u.mas, frame="icrs")
+
+    pa = cen.position_angle(oft)
+    pa = pa.to(u.deg)
+
+    return pa.value
 
 
 def radio_cat_diff_calc(table1, table2, sou_name="source_name",
@@ -227,9 +306,13 @@ def radio_cat_diff_calc(table1, table2, sou_name="source_name",
         com_sou["dra"], com_sou["dra_err"],
         com_sou["ddec"], com_sou["ddec_err"], corf)
 
+    # Direction of position offset
+    pax, pay = pa_calc1(dra, ddec)
+    pa = Column(pay, unit=u.deg)
+
     # Add these columns
-    com_sou.add_columns([ang_sep, X_a, X_d, X],
-                        names=["ang_sep", "nor_ra", "nor_dec", "nor_sep"])
+    com_sou.add_columns([ang_sep, pa, X_a, X_d, X],
+                        names=["ang_sep", "pa", "nor_ra", "nor_dec", "nor_sep"])
 
     com_sou["ang_sep"].unit = pos_unit
     com_sou["nor_ra"].unit = None
