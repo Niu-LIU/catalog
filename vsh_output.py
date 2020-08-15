@@ -44,7 +44,7 @@ def init_parnames(parnb):
                              "M22R", "M22I", "M21R", "M21I", "M20"])
     else:
         print("Sorry this length of array is not recongnized :-(")
-        exit()
+        sys.exit()
 
     return parnames
 
@@ -79,14 +79,14 @@ def write_htable(catnames, pmts, sigs, names=None, opt=sys.stdout, fmt="8.2f"):
     print("\\hline", file=opt)
 
     # data line
-    data_fmt = "  &${0:s} \\pm {0:s}$".format(fmt)
+    data_fmt = "  &${0:s} \\pm {0:s}$".format(fmt, fmt)
 
     for i in range(len(catnames)):
         data_line = ["{:10s}".format(catnames[i])]
-        pmtsj, sigsj = pmts[i], sigs[i]
+        pmt, sig = pmts[i], sigs[i]
 
-        for j in range(len(pmtsj)):
-            data_line.append(data_fmt % (pmtsj[j], sigsj[j]))
+        for j in range(len(pmt)):
+            data_line.append(data_fmt % (pmt[j], sig[j]))
 
         data_line.append(" \\\\")
 
@@ -94,7 +94,7 @@ def write_htable(catnames, pmts, sigs, names=None, opt=sys.stdout, fmt="8.2f"):
 
 
 # ----------- Vertical Table -------------------
-def write_vtable(names, pmts, sigs, opt=sys.stdout, fmt="%8.2f"):
+def write_vtable(names, pmts, sigs, opt=sys.stdout, fmt="8.2f"):
     '''Print estmates and corresponding formal errors into a horizontal table.
 
     Parameters
@@ -289,7 +289,7 @@ def save_vsh_result(pmts, sigs, ofile, parnames=None, fmt="%5.0f", comment=""):
     tvsh.write(ofile, format="ascii", overwrite=True)
 
 
-def write_textable(catnames, pmts, sigs, ofile, parnames=None, fmt="5.0f"):
+def write_textable(catnames, pmts, sigs, ofile=sys.stdout, parnames=None, fmt="%5.0f"):
     """Save the VSH results into a tex table.
 
     Parameters
@@ -304,15 +304,15 @@ def write_textable(catnames, pmts, sigs, ofile, parnames=None, fmt="5.0f"):
         specifier of the output format
     """
 
-    parnb = len(pmts)
+    parnb = len(pmts[0])
 
     if parnames is None:
         parnames = init_parnames(parnb)
 
-    write_htable(catnames, parnames, pmts, sigs, ofile, fmt)
+    write_htable(catnames, pmts, sigs, parnames, ofile, fmt)
 
 
-    # ------------------------- MAIN ---------------------------------------
+# ------------------------- MAIN ---------------------------------------
 if __name__ == "__main__":
     print("Sorry but there is nothing to do.")
 # ------------------------- END ----------------------------------------

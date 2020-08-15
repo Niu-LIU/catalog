@@ -80,12 +80,13 @@ def read_dr1_qso(dr1qsofile=None):
     gdr1["dec_err"].unit = u.mas
 
     # Calculate the semi-major axis of error ellipse
-    pos_err = pos_err_calc(
+    pos_err, pos_err_min, pa = error_ellipse_array(
         gdr1["ra_err"], gdr1["dec_err"], gdr1["ra_dec_corr"])
 
     # Add the semi-major axis of error ellipse to the table
-    gdr1.add_column(pos_err, name="pos_err", index=9)
-    gdr1["pos_err"].unit = u.mas
+    pos_err = Column(pos_err, name="pos_err", unit=u.mas)
+    pa = Column(pa, name="eepa", unit=u.deg)
+    gdr1.add_columns([pos_err, pa], indexes=[9, 10])
 
     return gdr1
 
@@ -195,12 +196,13 @@ def read_dr2_iers(dr2qsofile=None):
     gdr2.rename_column("pmdec_error", "pmdec_err")
 
     # Calculate the semi-major axis of error ellipse
-    pos_err = pos_err_calc(
+    pos_err, pos_err_min, pa = error_ellipse_array(
         gdr2["ra_err"], gdr2["dec_err"], gdr2["ra_dec_corr"])
 
     # Add the semi-major axis of error ellipse to the table
-    gdr2.add_column(pos_err, name="pos_err", index=6)
-    gdr2["pos_err"].unit = u.mas
+    pos_err = Column(pos_err, name="pos_err", unit=u.mas)
+    pa = Column(pa, name="eepa", unit=u.deg)
+    gdr2.add_columns([pos_err, pa], indexes=[9, 10])
 
     return gdr2
 

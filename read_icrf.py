@@ -15,7 +15,7 @@ import sys
 from sys import platform as _platform
 
 # My modules
-from my_progs.catalog.pos_err import pos_err_calc
+from .pos_err import error_ellipse_array
 
 __all__ = ["read_icrf1", "read_icrf2", "read_icrf3"]
 
@@ -106,12 +106,13 @@ def read_icrf1(icrf1file=None):
     icrf1["ra_dec_corr"] = icrf1["ra_dec_corr"].filled(0)
 
     # Calculate the semi-major axis of error ellipse
-    pos_err = pos_err_calc(
+    pos_err, pos_err_min, pa = error_ellipse_array(
         icrf1["ra_err"], icrf1["dec_err"], icrf1["ra_dec_corr"])
 
     # Add the semi-major axis of error ellipse to the table
-    icrf1.add_column(pos_err, name="pos_err", index=9)
-    icrf1["pos_err"].unit = u.mas
+    pos_err = Column(pos_err, name="pos_err", unit=u.mas)
+    pa = Column(pa, name="eepa", unit=u.deg)
+    icrf1.add_columns([pos_err, pa], indexes=[9, 10])
 
     return icrf1
 
@@ -165,12 +166,13 @@ def read_icrf2(icrf2file=None):
     icrf2["dec_err"] = icrf2["dec_err"].to(u.mas)
 
     # Calculate the semi-major axis of error ellipse
-    pos_err = pos_err_calc(
+    pos_err, pos_err_min, pa = error_ellipse_array(
         icrf2["ra_err"], icrf2["dec_err"], icrf2["ra_dec_corr"])
 
     # Add the semi-major axis of error ellipse to the table
-    icrf2.add_column(pos_err, name="pos_err", index=9)
-    icrf2["pos_err"].unit = u.mas
+    pos_err = Column(pos_err, name="pos_err", unit=u.mas)
+    pa = Column(pa, name="eepa", unit=u.deg)
+    icrf2.add_columns([pos_err, pa], indexes=[9, 10])
 
     return icrf2
 
@@ -234,11 +236,13 @@ def read_icrf3(icrf3_file=None, wv="sx"):
     icrf3["dec_err"] = icrf3["dec_err"].to(u.mas)
 
     # Calculate the semi-major axis of error ellipse
-    pos_err = pos_err_calc(
+    pos_err, pos_err_min, pa = error_ellipse_array(
         icrf3["ra_err"], icrf3["dec_err"], icrf3["ra_dec_corr"])
 
     # Add the semi-major axis of error ellipse to the table
-    icrf3.add_column(pos_err, name="pos_err", index=9)
+    pos_err = Column(pos_err, name="pos_err", unit=u.mas)
+    pa = Column(pa, name="eepa", unit=u.deg)
+    icrf3.add_columns([pos_err, pa], indexes=[9, 10])
 
     return icrf3
 
