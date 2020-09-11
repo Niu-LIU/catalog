@@ -93,7 +93,7 @@ def error_ellipse(ra_err, dec_err, ra_dec_corr, anticw=False):
 
     M, m = np.sqrt(M2), np.sqrt(m2)
 
-    # Calculate the positi angle counted anti-colockwise from the declination axis
+    # Calculate the position angle counted anti-colockwise from the declination axis
     if vec_M[1] == 0:
         if vec_M[0] > 0:
             pa0 = 90
@@ -186,7 +186,8 @@ def error_ellipse_array(ra_err, dec_err, ra_dec_corr, anticw=False):
     pa = np.zeros_like(ra_dec_corr)
 
     for i in range(len(M)):
-        M[i], m[i], pa[i] = error_ellipse(ra_err[i], dec_err[i], ra_dec_corr[i], anticw=False)
+        M[i], m[i], pa[i] = error_ellipse(
+            ra_err[i], dec_err[i], ra_dec_corr[i], anticw)
 
     return M, m, pa
 
@@ -232,7 +233,7 @@ def eepa_calc2(ra_err, dec_err, ra_dec_corr, anticw=False):
 
     pa = np.zeros_like(ra_err)
     for i in range(len(ra_err)):
-        pa[i] = eepa_calc_single(ra_err[i], dec_err[i], ra_dec_corr[i], anticw)
+        pa[i] = eepa_calc1(ra_err[i], dec_err[i], ra_dec_corr[i], anticw)
 
     return pa
 

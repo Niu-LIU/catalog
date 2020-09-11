@@ -11,57 +11,21 @@ from astropy.table import Table, Column
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 import numpy as np
-import sys
-from sys import platform as _platform
 
 # My modules
-from .pos_err import error_ellipse_array
+from pos_err import error_ellipse_array
+from get_dir import get_data_dir
 
 __all__ = ["read_icrf1", "read_icrf2", "read_icrf3"]
 
 
 # -----------------------------  FUNCTIONS -----------------------------
-def get_datadir():
-    """Check the OS and get the data directory.
-
-    I have several computers with different OS.
-    The path to the data file is different.
-
-    Returns
-    -------
-    datadir: string
-        directory which stores ICRF catalogs.
-
-    """
-
-    # Check the type of OS
-    if _platform == "linux" or _platform == "linux2":
-        # linux
-        datadir = "/home/neo/Astronomy/data/catalogs/icrf"
-    elif _platform == "darwin":
-        # MAC OS X
-        datadir = "/Users/Neo/Astronomy/data/catalogs/icrf"
-    elif _platform == "win32":
-        # Windows
-        print("Not implemented yet")
-        exit()
-    elif _platform == "win64":
-        # Windows 64-bit
-        print("Not implemented yet")
-        exit()
-    else:
-        print("Weird! What kind of OS do you use?")
-        exit()
-
-    return datadir
-
-
-def read_icrf1(icrf1file=None):
+def read_icrf1(icrf1_file=None):
     """Read the ICRF1 catalog
 
     Parameter
     ---------
-    icrf1file : string
+    icrf1_file : string
         file name and path of the ICRF1 catalog
 
     Return
@@ -70,14 +34,15 @@ def read_icrf1(icrf1file=None):
         data in the catalog
     """
 
-    if icrf1file is None:
-        datadir = get_datadir()
-        icrf1file = "{}/rsc95r01.dat".format(datadir)
+    if icrf1_file is None:
+        data_dir = get_data_dir()
+        icrf1_file = "{}/rsc95r01.dat".format(data_dir)
 
     # Read ICRF1 catalog
-    icrf1 = Table.read(icrf1file,
+    icrf1 = Table.read(icrf1_file,
                        format="ascii.fixed_width_no_header",
-                       names=["icrf_name", "iers_name", "type", "si_s", "si_x",
+                       names=["icrf_name", "iers_name", "type",
+                              "si_s", "si_x",
                               "ra_err", "dec_err", "ra_dec_corr",
                               "mean_obs", "beg_obs", "end_obs",
                               "nb_sess", "nb_del"],
@@ -87,7 +52,7 @@ def read_icrf1(icrf1file=None):
                                  100, 110, 120, 130, 136, 143])
 
     # Position information
-    ra_dec_str = Table.read(icrf1file,
+    ra_dec_str = Table.read(icrf1_file,
                             format="ascii.fixed_width_no_header",
                             names=["ra_dec"], col_starts=[42], col_ends=[73])
 
@@ -108,21 +73,22 @@ def read_icrf1(icrf1file=None):
     # Calculate the semi-major axis of error ellipse
     pos_err, pos_err_min, pa = error_ellipse_array(
         icrf1["ra_err"], icrf1["dec_err"], icrf1["ra_dec_corr"])
+    del pos_err_min
 
     # Add the semi-major axis of error ellipse to the table
     pos_err = Column(pos_err, name="pos_err", unit=u.mas)
     pa = Column(pa, name="eepa", unit=u.deg)
-    icrf1.add_columns([pos_err, pa], indexes=[9, 10])
+    icrf1.add_columns([pos_err, pa], indexes=[9, 9])
 
     return icrf1
 
 
-def read_icrf2(icrf2file=None):
+def read_icrf2(icrf2_file=None):
     """Read the ICRF1 catalog
 
     Parameter
     ---------
-    icrf2file : string
+    icrf2_file : string
         file name and path of the ICRF2 catalog
 
     Return
@@ -131,12 +97,12 @@ def read_icrf2(icrf2file=None):
         data in the catalog
     """
 
-    if icrf2file is None:
-        datadir = get_datadir()
-        icrf2file = "{}/icrf2.dat".format(datadir)
+    if icrf2_file is None:
+        data_dir = get_data_dir()
+        icrf2_file = "{}/icrf2.dat".format(data_dir)
 
     # Read ICRF2 catalog
-    icrf2 = Table.read(icrf2file,
+    icrf2 = Table.read(icrf2_file,
                        format="ascii.fixed_width_no_header",
                        names=["icrf_name", "ivs_name", "iers_name", "type",
                               "ra_err", "dec_err", "ra_dec_corr",
@@ -148,7 +114,7 @@ def read_icrf2(icrf2file=None):
                                  99, 107, 115, 123, 128, 135])
 
     # Position information
-    ra_dec_str = Table.read(icrf2file,
+    ra_dec_str = Table.read(icrf2_file,
                             format="ascii.fixed_width_no_header",
                             names=["ra_dec"], col_starts=[37], col_ends=[71])
 
@@ -168,11 +134,12 @@ def read_icrf2(icrf2file=None):
     # Calculate the semi-major axis of error ellipse
     pos_err, pos_err_min, pa = error_ellipse_array(
         icrf2["ra_err"], icrf2["dec_err"], icrf2["ra_dec_corr"])
+    del pos_err_min
 
     # Add the semi-major axis of error ellipse to the table
     pos_err = Column(pos_err, name="pos_err", unit=u.mas)
     pa = Column(pa, name="eepa", unit=u.deg)
-    icrf2.add_columns([pos_err, pa], indexes=[9, 10])
+    icrf2.add_columns([pos_err, pa], indexes=[9, 9])
 
     return icrf2
 
@@ -193,15 +160,15 @@ def read_icrf3(icrf3_file=None, wv="sx"):
         data in the catalog
     """
 
-    datadir = get_datadir()
+    data_dir = get_data_dir()
 
     if icrf3_file is None:
-        if wv == "sx" or wv == "SX":
-            icrf3_file = "%s/icrf3sx.txt" % datadir
-        elif wv == "k" or wv == "K":
-            icrf3_file = "%s/icrf3k.txt" % datadir
-        elif wv == "xka" or wv == "XKA":
-            icrf3_file = "%s/icrf3xka.txt" % datadir
+        if wv in ["sx", "SX"]:
+            icrf3_file = "%s/icrf3sx.txt" % data_dir
+        elif wv in ["k", "K"]:
+            icrf3_file = "%s/icrf3k.txt" % data_dir
+        elif wv in ["xka", "XKA"]:
+            icrf3_file = "%s/icrf3xka.txt" % data_dir
         else:
             print("wv could only be 'sx', 'k', or 'xka'.")
             sys.exit()
@@ -238,16 +205,17 @@ def read_icrf3(icrf3_file=None, wv="sx"):
     # Calculate the semi-major axis of error ellipse
     pos_err, pos_err_min, pa = error_ellipse_array(
         icrf3["ra_err"], icrf3["dec_err"], icrf3["ra_dec_corr"])
+    del pos_err_min
 
     # Add the semi-major axis of error ellipse to the table
     pos_err = Column(pos_err, name="pos_err", unit=u.mas)
     pa = Column(pa, name="eepa", unit=u.deg)
-    icrf3.add_columns([pos_err, pa], indexes=[9, 10])
+    icrf3.add_columns([pos_err, pa], indexes=[9, 9])
 
     return icrf3
 
 
 # -------------------------------- MAIN --------------------------------
-if __name__ == '__main__':
+if __name__ == "__main__":
     pass
 # --------------------------------- END --------------------------------
