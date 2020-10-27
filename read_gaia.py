@@ -13,8 +13,8 @@ from astropy import units as u
 import numpy as np
 
 # My modules
-from pos_err import error_ellipse_array
-from get_dir import get_data_dir
+from .pos_err import error_ellipse_array
+from .get_dir import get_data_dir
 
 __all__ = ["read_dr1_qso", "read_dr2_iers", "read_dr2_allwise"]
 
@@ -36,7 +36,7 @@ def read_dr1_qso(dr1_qso_file=None):
 
     if dr1_qso_file is None:
         data_dir = get_data_dir()
-        dr1_qso_file = "{}/dr1/qso.dat".format(data_dir)
+        dr1_qso_file = "{}/gaia/dr1/qso.dat".format(data_dir)
 
     gdr1 = Table.read(dr1_qso_file, format="ascii.fixed_width_no_header",
                       names=["solution_id", "source_id", "ref_epoch",
@@ -52,6 +52,7 @@ def read_dr1_qso(dr1_qso_file=None):
     # Calculate the semi-major axis of error ellipse
     pos_err, pos_err_min, pa = error_ellipse_array(
         gdr1["ra_err"], gdr1["dec_err"], gdr1["ra_dec_corr"])
+    del pos_err_min
 
     # Add the semi-major axis of error ellipse to the table
     pos_err = Column(pos_err, name="pos_err", unit=u.mas)
@@ -77,7 +78,7 @@ def modify_dr2_iers(dr2_qso_file=None):
 
     if dr2_qso_file is None:
         data_dir = get_data_dir()
-        dr2_qso_file = "{}/dr2/gaiadr2_iers0.fits".format(data_dir)
+        dr2_qso_file = "{}/gaia/dr2/gaiadr2_iers0.fits".format(data_dir)
 
     # Read Gaia DR2 IERS quasar data
     gdr2 = Table.read(dr2_qso_file)
@@ -114,7 +115,7 @@ def read_dr2_iers(dr2_qso_file=None, errscaling=False):
 
     if dr2_qso_file is None:
         data_dir = get_data_dir()
-        dr2_qso_file = "{}/dr2/gaiadr2_iers.fits".format(data_dir)
+        dr2_qso_file = "{}/gaia/dr2/gaiadr2_iers.fits".format(data_dir)
 
     # Read Gaia DR2 IERS quasar data
     gdr2 = Table.read(dr2_qso_file)
@@ -190,7 +191,7 @@ def read_dr2_allwise(dr2_qso_file=None):
 
     if dr2_qso_file is None:
         data_dir = get_data_dir()
-        dr2_qso_file = "{}/dr2/gaiadr2_qso_all.fits".format(data_dir)
+        dr2_qso_file = "{}/gaia/dr2/gaiadr2_qso_all.fits".format(data_dir)
 
     gdr2 = read_dr2_iers(dr2_qso_file)
 

@@ -13,8 +13,8 @@ from astropy.coordinates import SkyCoord
 import numpy as np
 
 # My modules
-from pos_err import error_ellipse_array
-from get_dir import get_data_dir
+from .pos_err import error_ellipse_array
+from .get_dir import get_data_dir
 
 __all__ = ["read_icrf1", "read_icrf2", "read_icrf3"]
 
@@ -36,7 +36,7 @@ def read_icrf1(icrf1_file=None):
 
     if icrf1_file is None:
         data_dir = get_data_dir()
-        icrf1_file = "{}/rsc95r01.dat".format(data_dir)
+        icrf1_file = "{}/icrf/rsc95r01.dat".format(data_dir)
 
     # Read ICRF1 catalog
     icrf1 = Table.read(icrf1_file,
@@ -99,7 +99,7 @@ def read_icrf2(icrf2_file=None):
 
     if icrf2_file is None:
         data_dir = get_data_dir()
-        icrf2_file = "{}/icrf2.dat".format(data_dir)
+        icrf2_file = "{}/icrf/icrf2.dat".format(data_dir)
 
     # Read ICRF2 catalog
     icrf2 = Table.read(icrf2_file,
@@ -164,11 +164,11 @@ def read_icrf3(icrf3_file=None, wv="sx"):
 
     if icrf3_file is None:
         if wv in ["sx", "SX"]:
-            icrf3_file = "%s/icrf3sx.txt" % data_dir
+            icrf3_file = "%s/icrf/icrf3sx.txt" % data_dir
         elif wv in ["k", "K"]:
-            icrf3_file = "%s/icrf3k.txt" % data_dir
-        elif wv in ["xka", "XKA"]:
-            icrf3_file = "%s/icrf3xka.txt" % data_dir
+            icrf3_file = "%s/icrf/icrf3k.txt" % data_dir
+        elif wv in ["xka", "XKA", "XKa"]:
+            icrf3_file = "%s/icrf/icrf3xka.txt" % data_dir
         else:
             print("wv could only be 'sx', 'k', or 'xka'.")
             sys.exit()

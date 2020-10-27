@@ -30,10 +30,10 @@ def get_data_dir():
     # Check the type of OS
     if _platform in ["linux", "linux2"]:
         # linux
-        data_dir = "/home/neo/Astronomy/data/catalogs/gaia"
+        data_dir = "/home/neo/Astronomy/data/catalogs"
     elif _platform in ["darwin"]:
         # MAC OS X
-        data_dir = "/Users/Neo/Astronomy/data/catalogs/gaia"
+        data_dir = "/Users/Neo/Astronomy/data/catalogs"
     elif _platform in ["win32", "win64"]:
         # Windows
         print("Not implemented yet")

@@ -13,7 +13,7 @@ Oct 29, 2018: re-write all the codes
 import numpy as np
 from numpy import sin, cos, pi, concatenate
 # My modules
-from cov_mat import calc_wgt_mat, read_cov_mat
+from .cov_mat import calc_wgt_mat, read_cov_mat
 from .stats_calc import calc_chi2_2d, calc_gof
 
 

@@ -5,15 +5,35 @@
 Created on Fri Sep 11 11:05:17 2020
 
 @author: Neo(liuniu@smail.nju.edu.cn)
+
+# 103 - 104  object primary type:
+#              A  - AGN, including unspecified QSO in NED
+#              AB - blazar (replaced by other AGN class when known)
+#              AL - BL Lac type
+#              AQ - quasar
+#              AR - LINER-type AGN
+#              AS - Seyfert galaxy
+#              A1 - Seyfert 1 galaxy
+#              A2 - Seyfert 2 galaxy
+#              G  - radio galaxy
+#              G2 - double or multiple galaxy
+#              I  - IR source
+#              R  - radio source
+#              S  - star or stellar object
+#              SN - supernova (remnant)
+#              U  - UV source
+#              V  - visual source
+#              X  - X-ray source
+#              GR - gamma-ray source
+
 """
 
 import numpy as np
-from astropy.table import Table, Column
+from astropy.table import Table
 from astropy import units as u
 
 # My modules
-from pos_err import error_ellipse_array
-from get_dir import get_data_dir
+from .get_dir import get_data_dir
 
 
 # -----------------------------  MAIN -----------------------------
@@ -32,7 +52,7 @@ def read_ocars(ocars_file=None):
 
     if ocars_file is None:
         data_dir = get_data_dir()
-        ocars_file = "{}/ocars.csv".format(data_dir)
+        ocars_file = "{}/ocars/ocars.csv".format(data_dir)
 
     ocars = Table.read(ocars_file, format="ascii.csv",
                        names=["iers_name", "iau_name",
@@ -52,16 +72,6 @@ def read_ocars(ocars_file=None):
     ocars["dec"].unit = u.deg
     ocars["ra_err"].unit = u.mas
     ocars["dec_err"].unit = u.mas
-
-    # Calculate the semi-major axis of error ellipse
-    pos_err, pos_err_min, pa = error_ellipse_array(
-        ocars["ra_err"], ocars["dec_err"], ocars["ra_dec_corr"])
-    del pos_err_min
-
-    # Add the semi-major axis of error ellipse to the table
-    pos_err = Column(pos_err, name="pos_err", unit=u.mas)
-    pa = Column(pa, name="eepa", unit=u.deg)
-    ocars.add_columns([pos_err, pa], indexes=[9, 9])
 
     return ocars
 
