@@ -9,53 +9,23 @@ Created on Thu Oct  4 16:00:02 2018
 
 from astropy.table import Table, Column
 from astropy import units as u
-from astropy.coordinates import SkyCoord
+# from astropy.coordinates import SkyCoord
 import numpy as np
-import sys
-from sys import platform as _platform
 
 # My modules
-from my_progs.catalog.pos_err import pos_err_calc
-
+from .pos_err import error_ellipse_array
+from .get_dir import get_data_dir
 
 __all__ = ["read_dr1_qso", "read_dr2_iers", "read_dr2_allwise"]
 
 
 # -----------------------------  FUNCTIONS -----------------------------
-def get_datadir():
-    """Check the OS and get the data directory.
-
-    I have several computers with different OS.
-    The path to the data file is different.
-
-    Returns
-    -------
-    datadir: string
-        directory which stores Gaia catalogs.
-
-    """
-
-    # Check the type of OS
-    if _platform == "linux" or _platform == "linux2":
-        # linux
-        datadir = "/home/neo/Astronomy/data/catalogs/gaia"
-    elif _platform == "darwin":
-        # MAC OS X
-        datadir = "/Users/Neo/Astronomy/data/catalogs/gaia"
-    elif _platform == "win32" or _platform == "win64":
-        # Windows
-        print("Not implemented yet")
-        exit()
-
-    return datadir
-
-
-def read_dr1_qso(dr1qsofile=None):
+def read_dr1_qso(dr1_qso_file=None):
     """Read the position information of Gaia DR1 quasar auxiliary solution.
 
     Parameter
     ---------
-    dr1qsofile : string
+    dr1_qso_file : string
         file name and path of the Gaia DR1 quasar auxiliary solution
 
     Return
@@ -64,11 +34,11 @@ def read_dr1_qso(dr1qsofile=None):
         data in the catalog
     """
 
-    if dr1qsofile is None:
-        datadir = get_datadir()
-        dr1qsofile = "{}/dr1/qso.dat".format(datadir)
+    if dr1_qso_file is None:
+        data_dir = get_data_dir()
+        dr1_qso_file = "{}/gaia/dr1/qso.dat".format(data_dir)
 
-    gdr1 = Table.read(dr1qsofile, format="ascii.fixed_width_no_header",
+    gdr1 = Table.read(dr1_qso_file, format="ascii.fixed_width_no_header",
                       names=["solution_id", "source_id", "ref_epoch",
                              "ra", "ra_err", "dec", "dec_err",
                              "ra_dec_corr", "phot_g_mean_mag",
@@ -82,21 +52,22 @@ def read_dr1_qso(dr1qsofile=None):
     # Calculate the semi-major axis of error ellipse
     pos_err, pos_err_min, pa = error_ellipse_array(
         gdr1["ra_err"], gdr1["dec_err"], gdr1["ra_dec_corr"])
+    del pos_err_min
 
     # Add the semi-major axis of error ellipse to the table
     pos_err = Column(pos_err, name="pos_err", unit=u.mas)
     pa = Column(pa, name="eepa", unit=u.deg)
-    gdr1.add_columns([pos_err, pa], indexes=[9, 10])
+    gdr1.add_columns([pos_err, pa], indexes=[9, 9])
 
     return gdr1
 
 
-def modify_dr2_iers(dr2qsofile=None):
+def modify_dr2_iers(dr2_qso_file=None):
     """Correct the wrong name in the Gaia-CRF2 subset.
 
     Parameter
     ---------
-    dr2qsofile : string
+    dr2_qso_file : string
         file name and path of the Gaia DR2 auxiliary IERS catalog
 
     Return
@@ -105,12 +76,12 @@ def modify_dr2_iers(dr2qsofile=None):
         data in the catalog
     """
 
-    if dr2qsofile is None:
-        datadir = get_datadir()
-        dr2qsofile = "{}/dr2/gaiadr2_iers0.fits".format(datadir)
+    if dr2_qso_file is None:
+        data_dir = get_data_dir()
+        dr2_qso_file = "{}/gaia/dr2/gaiadr2_iers0.fits".format(data_dir)
 
     # Read Gaia DR2 IERS quasar data
-    gdr2 = Table.read(dr2qsofile)
+    gdr2 = Table.read(dr2_qso_file)
 
     # There are two small errore in the colomn iers_name in this sample
     # 0548+37A --> 0548+377
@@ -123,16 +94,18 @@ def modify_dr2_iers(dr2qsofile=None):
         idx = np.where(gdr2["iers_name"] == oldname)[0][0]
         gdr2[idx]["iers_name"] = newname
 
-    gdr2.write(dr2qsofile, overwrite=True)
+    gdr2.write(dr2_qso_file, overwrite=True)
 
 
-def read_dr2_iers(dr2qsofile=None):
+def read_dr2_iers(dr2_qso_file=None, errscaling=False):
     """Read the positional information of Gaia DR2 auxiliary IERS catalog.
 
     Parameter
     ---------
-    dr2qsofile : string
+    dr2_qso_file : string
         file name and path of the Gaia DR2 auxiliary IERS catalog
+    errscaling : boolean
+        if true, scale gaia position error by chi2/ndf
 
     Return
     ------
@@ -140,12 +113,12 @@ def read_dr2_iers(dr2qsofile=None):
         data in the catalog
     """
 
-    if dr2qsofile is None:
-        datadir = get_datadir()
-        dr2qsofile = "{}/dr2/gaiadr2_iers.fits".format(datadir)
+    if dr2_qso_file is None:
+        data_dir = get_data_dir()
+        dr2_qso_file = "{}/gaia/dr2/gaiadr2_iers.fits".format(data_dir)
 
     # Read Gaia DR2 IERS quasar data
-    gdr2 = Table.read(dr2qsofile)
+    gdr2 = Table.read(dr2_qso_file)
 
     # There are two small errore in the colomn iers_name in this sample
     # 0548+37A --> 0548+377
@@ -159,34 +132,18 @@ def read_dr2_iers(dr2qsofile=None):
     #     gdr2[idx]["iers_name"] = newname
 
     # Only the positional information are kept.
-    gdr2.keep_columns(["iers_name",
-                       "source_id",
-                       "ra",
-                       "ra_error",
-                       "dec",
-                       "dec_error",
-                       "parallax",
-                       "parallax_error",
-                       "pmra",
-                       "pmra_error",
-                       "pmdec",
-                       "pmdec_error",
-                       "ra_dec_corr",
-                       "ra_parallax_corr",
-                       "ra_pmra_corr",
-                       "ra_pmdec_corr",
-                       "dec_parallax_corr",
-                       "dec_pmra_corr",
-                       "dec_pmdec_corr",
-                       "parallax_pmra_corr",
-                       "parallax_pmdec_corr",
-                       "pmra_pmdec_corr",
-                       "phot_g_mean_mag",
-                       "phot_bp_mean_mag",
-                       "phot_rp_mean_mag",
-                       "bp_rp",
-                       "astrometric_n_obs_al",
-                       "astrometric_matched_observations"])
+    gdr2.keep_columns(["iers_name", "source_id",
+                       "ra", "ra_error", "dec", "dec_error",
+                       "parallax", "parallax_error",
+                       "pmra", "pmra_error", "pmdec", "pmdec_error",
+                       "ra_dec_corr", "ra_parallax_corr", "ra_pmra_corr",
+                       "ra_pmdec_corr", "dec_parallax_corr", "dec_pmra_corr",
+                       "dec_pmdec_corr", "parallax_pmra_corr",
+                       "parallax_pmdec_corr", "pmra_pmdec_corr",
+                       "phot_g_mean_mag", "phot_bp_mean_mag", "phot_rp_mean_mag",
+                       "bp_rp", "astrometric_n_obs_al", "astrometric_n_good_obs_al",
+                       "astrometric_matched_observations", "astrometric_chi2_al",
+                       "astrometric_params_solved"])
 
     # Rename the column names
     gdr2.rename_column("ra_error", "ra_err")
@@ -195,24 +152,35 @@ def read_dr2_iers(dr2qsofile=None):
     gdr2.rename_column("pmra_error", "pmra_err")
     gdr2.rename_column("pmdec_error", "pmdec_err")
 
+    # Determine whether to scale the position error
+    if errscaling:
+        # Degree of freedom = #observation - #parameter
+        dof = gdr2["astrometric_n_good_obs_al"] - \
+            gdr2["astrometric_params_solved"]
+        scale = np.sqrt(gdr2["astrometric_chi2_al"] / dof)
+
+        gdr2["ra_err"] = gdr2["ra_err"] * scale
+        gdr2["dec_err"] = gdr2["dec_err"] * scale
+
     # Calculate the semi-major axis of error ellipse
     pos_err, pos_err_min, pa = error_ellipse_array(
         gdr2["ra_err"], gdr2["dec_err"], gdr2["ra_dec_corr"])
+    del pos_err_min
 
     # Add the semi-major axis of error ellipse to the table
     pos_err = Column(pos_err, name="pos_err", unit=u.mas)
     pa = Column(pa, name="eepa", unit=u.deg)
-    gdr2.add_columns([pos_err, pa], indexes=[9, 10])
+    gdr2.add_columns([pos_err, pa], indexes=[9, 9])
 
     return gdr2
 
 
-def read_dr2_allwise(dr2qsofile=None):
+def read_dr2_allwise(dr2_qso_file=None):
     """Read the positional information of Gaia DR2 auxiliary AllWISE catalog.
 
     Parameter
     ---------
-    dr2qsofile : string
+    dr2_qso_file : string
         file name and path of the Gaia DR2 auxiliary AllWISE catalog
 
     Return
@@ -221,11 +189,11 @@ def read_dr2_allwise(dr2qsofile=None):
         data in the catalog
     """
 
-    if dr2qsofile is None:
-        datadir = get_datadir()
-        dr2qsofile = "{}/dr2/gaiadr2_qso_all.fits".format(datadir)
+    if dr2_qso_file is None:
+        data_dir = get_data_dir()
+        dr2_qso_file = "{}/gaia/dr2/gaiadr2_qso_all.fits".format(data_dir)
 
-    gdr2 = read_dr2_iers(dr2qsofile)
+    gdr2 = read_dr2_iers(dr2_qso_file)
 
     # Read Gaia DR2 IERS quasar data
     # gdr2 = Table.read(dr2_file)

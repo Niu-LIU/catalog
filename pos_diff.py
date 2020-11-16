@@ -12,8 +12,10 @@ from astropy.table import Table, join, Column
 from astropy import units as u
 from functools import reduce
 import numpy as np
-from numpy import cos, sqrt
+from numpy import cos, sqrt, tan
 from math import hypot
+# My progs
+from .pos_err import error_ellipse_array
 
 
 __all__ = ["nor_sep_calc", "pos_diff_calc", "pa_calc",
@@ -133,8 +135,8 @@ def pa_calc0(dra, ddec, anticw=False):
         Angle (in degree) of positional offset vector towards to y-axis anti-clockwisely
     """
 
-    Ax = np.rad2deg(np.arctan2(ddec, dra))  # clockwise
-    Ay = np.rad2deg(np.arctan2(dra, ddec))  # clockwise
+    Ax = np.rad2deg(np.arctan2(ddec, dra))  # anti-clockwise
+    Ay = np.rad2deg(np.arctan2(dra, ddec))  # anti-clockwise
 
     if anticw:
         # anticlockwise
@@ -193,7 +195,7 @@ def pa_calc1(dra, ddec, anticw=False):
     return Ax, Ay
 
 
-def pa_calc(dra, ddec, anticw=False):
+def pa_calc(dra, ddec):
     """Calculate positional angle from positional offset.
 
     A new implementation.
@@ -220,6 +222,38 @@ def pa_calc(dra, ddec, anticw=False):
     pa = pa.to(u.deg)
 
     return pa.value
+
+
+def pos_diff_err(dra, ddec, dra_err, ddec_err, cov, rho, phi,
+                 eema1, eena1, eepa1, eema2, eena2, eepa2):
+    """Calculate formal error for arclength and orientation of position offset vector
+
+    The calaculate formula follows Eq.(1) given in Petrov, Kovalev, Plavin (2020)
+    (MNRAS 482, 3023-3031).
+    It is quite long and complex and I am not willing to type them here.
+    In the code, 'a' is represented by 'rho', 'v' by '1', and 'g' by '2'.
+    """
+
+    # Calculate the uncertainties of arc-length
+    tan_ang1 = tan(np.deg2rad(eepa1 - phi))**2
+    ratio1 = (eema1 / eena1)**2
+    tan_ang2 = tan(np.deg2rad(eepa2 - phi))**2
+    ratio2 = (eema2 / eena2)**2
+    sigma_rho2 = (1+tan_ang1) / (1+tan_ang1*ratio1) * eema1**2 + \
+        (1+tan_ang2) / (1+tan_ang2*ratio2) * eema2**2
+    sigma_rho = sqrt(sigma_rho2)
+
+    # Calculate the uncertainty of PA
+    term1 = dra ** 2 * ddec_err ** 2
+    term2 = ddec ** 2 * dra_err ** 2
+    term3 = 2 * dra * ddec * cov
+    sigma_phi2 = (term1 + term2 - term3) / rho ** 4
+    sigma_phi = sqrt(sigma_phi2)
+
+    # radian -> degree
+    sigma_phi = np.rad2deg(sigma_phi)
+
+    return sigma_rho, sigma_phi
 
 
 def radio_cat_diff_calc(table1, table2, sou_name="source_name",
@@ -268,16 +302,19 @@ def radio_cat_diff_calc(table1, table2, sou_name="source_name",
     dra = (com_sou["ra_%s" % label1] - com_sou["ra_%s" % label2]) * arc_fac
     ddec = com_sou["dec_%s" % label1] - com_sou["dec_%s" % label2]
 
-    dra_err = sqrt(com_sou["ra_err_%s" % label1]**2 +
-                   com_sou["ra_err_%s" % label2]**2)
-    ddec_err = sqrt(com_sou["dec_err_%s" % label1] ** 2 +
-                    com_sou["dec_err_%s" % label2]**2)
+    ra_err1 = com_sou["ra_err_%s" % label1]
+    dec_err1 = com_sou["dec_err_%s" % label1]
+    ra_dec_cor1 = com_sou["ra_dec_corr_%s" % label1]
+    ra_err2 = com_sou["ra_err_%s" % label2]
+    dec_err2 = com_sou["dec_err_%s" % label2]
+    ra_dec_cor2 = com_sou["ra_dec_corr_%s" % label2]
+
+    dra_err = sqrt(ra_err1**2 + ra_err2**2)
+    ddec_err = sqrt(dec_err1**2 + dec_err2**2)
 
     # Correlation coefficient of combined errors
-    c1 = com_sou["ra_err_%s" % label1] * \
-        com_sou["dec_err_%s" % label1] * com_sou["ra_dec_corr_%s" % label1]
-    c2 = com_sou["ra_err_%s" % label2] * \
-        com_sou["dec_err_%s" % label2] * com_sou["ra_dec_corr_%s" % label2]
+    c1 = ra_err1 * dec_err1 * ra_dec_cor1
+    c2 = ra_err2 * dec_err2 * ra_dec_cor2
     cov = c1 + c2
     corf = cov / (dra_err * ddec_err)
 
@@ -310,11 +347,22 @@ def radio_cat_diff_calc(table1, table2, sou_name="source_name",
     pax, pay = pa_calc1(dra, ddec)
     pa = Column(pay, unit=u.deg)
 
+    # Calculate the parameters of error ellipse
+    eema1, eena1, eepa1 = error_ellipse_array(ra_err1, dec_err1, ra_dec_cor1)
+    eema2, eena2, eepa2 = error_ellipse_array(ra_err2, dec_err2, ra_dec_cor2)
+
+    # Calculate uncertainties for rho and PA
+    ang_sep_err, pa_err = pos_diff_err(dra, ddec, dra_err, ddec_err, cov, ang_sep,
+                                       pay, eema1, eena1, eepa1, eema2, eena2, eepa2)
+
     # Add these columns
-    com_sou.add_columns([ang_sep, pa, X_a, X_d, X],
-                        names=["ang_sep", "pa", "nor_ra", "nor_dec", "nor_sep"])
+    com_sou.add_columns([ang_sep, ang_sep_err, pa, pa_err, X_a, X_d, X],
+                        names=["ang_sep", "ang_sep_err", "pa", "pa_err",
+                               "nor_ra", "nor_dec", "nor_sep"])
 
     com_sou["ang_sep"].unit = pos_unit
+    com_sou["ang_sep_err"].unit = pos_unit
+    com_sou["pa_err"].unit = u.deg
     com_sou["nor_ra"].unit = None
     com_sou["nor_dec"].unit = None
     com_sou["nor_sep"].unit = None
