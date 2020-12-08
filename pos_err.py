@@ -11,7 +11,8 @@ import numpy as np
 from numpy import sqrt, sin, cos
 
 
-__all__ = ["pos_err_calc", "overall_error", "error_ellipse", "error_ellipse2"]
+__all__ = ["pos_err_calc", "overall_error", "error_ellipse", "error_ellipse2",
+           "error_ellipse_calc"]
 
 
 # -----------------------------  FUNCTIONS -----------------------------
@@ -161,7 +162,7 @@ def error_ellipse2(ra_err, dec_err, ra_dec_corr):
     return eema, eena, pa
 
 
-def error_ellipse_array(ra_err, dec_err, ra_dec_corr, anticw=False):
+def error_ellipse_calc(ra_err, dec_err, ra_dec_corr, anticw=False):
     """Calculate Parameters of error ellipse for a subset of objects
 
     Parameters

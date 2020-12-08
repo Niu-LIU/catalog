@@ -30,7 +30,7 @@ def get_data_dir():
     # Check the type of OS
     if _platform in ["linux", "linux2"]:
         # linux
-        data_dir = "/home/neo/Astronomy/data/catalogs"
+        data_dir = "/home/nliu/Astronomy/data/catalogs"
     elif _platform in ["darwin"]:
         # MAC OS X
         data_dir = "/Users/Neo/Astronomy/data/catalogs"

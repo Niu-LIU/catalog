@@ -24,7 +24,7 @@ __all__ = ["nor_sep_calc", "pos_diff_calc", "pa_calc",
 
 # -----------------------------  FUNCTIONS -----------------------------
 def nor_sep_calc(dRA, dRA_err, dDC, dDC_err, C):
-    '''Calculate the normalized seperation.
+    """Calculate the normalized seperation.
 
     Parameters
     ----------
@@ -37,7 +37,7 @@ def nor_sep_calc(dRA, dRA_err, dDC, dDC_err, C):
     ang_sep : angular seperation, in micro-as
     X_a / X_d : normalized coordinate differences in RA / DC, unit-less
     X : Normalized separations, unit-less.
-    '''
+    """
 
     # Angular seperations
     ang_sep = sqrt(dRA**2 + dDC**2)
@@ -47,18 +47,23 @@ def nor_sep_calc(dRA, dRA_err, dDC, dDC_err, C):
     X_a = dRA / dRA_err
     X_d = dDC / dDC_err
 
-    # Normalised separation - Mignard's statistics (considering covariance)
-    X = np.zeros_like(X_a)
-
-    for i, (X_ai, X_di, Ci) in enumerate(zip(X_a, X_d, C)):
-        if Ci == -1.:
-            Ci = -0.999
-        if Ci == 1.:
-            Ci = 0.999
-
-        wgt = np.linalg.inv(np.mat([[1, Ci], [Ci, 1]]))
-        Xmat = np.mat([X_ai, X_di])
-        X[i] = sqrt(reduce(np.dot, (Xmat, wgt, Xmat.T)))
+    # Normalised separation - Mignard"s statistics (considering covariance)
+#     X = np.zeros_like(X_a)
+#
+#     for i, (X_ai, X_di, Ci) in enumerate(zip(X_a, X_d, C)):
+#         if Ci == -1.:
+#             Ci = -0.999
+#         if Ci == 1.:
+#             Ci = 0.999
+#
+#         wgt = np.linalg.inv(np.mat([[1, Ci], [Ci, 1]]))
+#         Xmat = np.mat([X_ai, X_di])
+#         X[i] = sqrt(reduce(np.dot, (Xmat, wgt, Xmat.T)))
+    # Now I will use the explict expression
+    # Avoid singular
+    C = np.where(C == -1, -0.99999, C)
+    C = np.where(C == 1, 0.99999, C)
+    X = (X_a**2 + X_d**2 - 2*C*X_a*X_d) / (1-C**2)
 
     return ang_sep, X_a, X_d, X
 
@@ -66,7 +71,7 @@ def nor_sep_calc(dRA, dRA_err, dDC, dDC_err, C):
 def pos_diff_calc(RA1, RA1_err, DC1, DC1_err, Cor1,
                   RA2, RA2_err, DC2, DC2_err, Cor2,
                   arccof=None):
-    '''Calculate the normalized seperation between VLBI and Gaia positions.
+    """Calculate the normalized seperation between VLBI and Gaia positions.
 
 
     Parameters
@@ -76,14 +81,14 @@ def pos_diff_calc(RA1, RA1_err, DC1, DC1_err, Cor1,
     Cor : correlation coeffient between RA and DC.
     arccof : cos(Dec.)
 
-    Note: suffix 'G' stands for GaiaDR1 and I for VLBI catalog.
+    Note: suffix "G" stands for GaiaDR1 and I for VLBI catalog.
 
     Returns
     ----------
     ang_sep : angular seperation in micro-as
     X_a / X_d : normalized seperation in RA / DC, unit-less
     X : Normalized separations, unit-less.
-    '''
+    """
 
     if arccof is None:
         arccof = cos(np.deg2rad(DC1))
@@ -231,7 +236,7 @@ def pos_diff_err(dra, ddec, dra_err, ddec_err, cov, rho, phi,
     The calaculate formula follows Eq.(1) given in Petrov, Kovalev, Plavin (2020)
     (MNRAS 482, 3023-3031).
     It is quite long and complex and I am not willing to type them here.
-    In the code, 'a' is represented by 'rho', 'v' by '1', and 'g' by '2'.
+    In the code, "a" is represented by "rho", "v" by "1", and "g" by "2".
     """
 
     # Calculate the uncertainties of arc-length
