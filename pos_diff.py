@@ -15,7 +15,7 @@ import numpy as np
 from numpy import cos, sqrt, tan
 from math import hypot
 # My progs
-from .pos_err import error_ellipse_array
+from .pos_err import error_ellipse_calc
 
 
 __all__ = ["nor_sep_calc", "pos_diff_calc", "pa_calc",
@@ -295,9 +295,9 @@ def radio_cat_diff_calc(table1, table2, sou_name="source_name",
     table4 = Table(table2)
 
     table3.keep_columns([sou_name, "ra", "dec", "ra_err", "dec_err",
-                         "ra_dec_corr", "pos_err"])
+                         "ra_dec_corr"])
     table4.keep_columns([sou_name, "ra", "dec", "ra_err", "dec_err",
-                         "ra_dec_corr", "pos_err"])
+                         "ra_dec_corr"])
 
     # Cross-match by the source name
     com_sou = join(table3, table4, keys=sou_name, table_names=label)
@@ -353,8 +353,8 @@ def radio_cat_diff_calc(table1, table2, sou_name="source_name",
     pa = Column(pay, unit=u.deg)
 
     # Calculate the parameters of error ellipse
-    eema1, eena1, eepa1 = error_ellipse_array(ra_err1, dec_err1, ra_dec_cor1)
-    eema2, eena2, eepa2 = error_ellipse_array(ra_err2, dec_err2, ra_dec_cor2)
+    eema1, eena1, eepa1 = error_ellipse_calc(ra_err1, dec_err1, ra_dec_cor1)
+    eema2, eena2, eepa2 = error_ellipse_calc(ra_err2, dec_err2, ra_dec_cor2)
 
     # Calculate uncertainties for rho and PA
     ang_sep_err, pa_err = pos_diff_err(dra, ddec, dra_err, ddec_err, cov, ang_sep,

@@ -9,10 +9,11 @@ Created on Fri Sep 21 15:36:35 2018
 
 import numpy as np
 from numpy import sqrt, sin, cos
+from numpy.linalg import eig
+import astropy
 
 
-__all__ = ["pos_err_calc", "overall_error", "error_ellipse", "error_ellipse2",
-           "error_ellipse_calc"]
+__all__ = ["pos_err_calc", "overall_error", "error_ellipse_calc"]
 
 
 # -----------------------------  FUNCTIONS -----------------------------
@@ -59,7 +60,81 @@ def overall_error(ra_err, dec_err, ra_dec_corr):
     return overall_err
 
 
-def error_ellipse(ra_err, dec_err, ra_dec_corr, anticw=False):
+def eepa_calc(ra_err, dec_err, ra_dec_corr, anticw=False):
+    """Calculate the ovrall formal uncertainty.
+
+    ovrall formal uncertainty = sqrt(RA_err^2+Dec_err^2+C*RA_err*Dec_err)
+
+    Parameters
+    ----------
+    ra_err/dec_err : formal uncertainty of RA/Dec, usually in micro-as
+    ra_dec_corr : correlation coeffient between RA and Dec, unitless.
+
+    Returns
+    ----------
+    pa : the position angle of the major axis of the error ellipse
+    """
+
+    M, m, pa = error_ellipse(ra_err, dec_err, ra_dec_corr, anticw)
+
+    return pa
+
+
+def eepa_calc2(ra_err, dec_err, ra_dec_corr, anticw=False):
+    """Calculate the ovrall formal uncertainty.
+
+    ovrall formal uncertainty = sqrt(RA_err^2+Dec_err^2+C*RA_err*Dec_err)
+
+    Parameters
+    ----------
+    ra_err/dec_err : formal uncertainty of RA/Dec, usually in micro-as
+    ra_dec_corr : correlation coeffient between RA and Dec, unitless.
+
+    Returns
+    ----------
+    pa : the position angle of the major axis of the error ellipse
+    """
+
+    pa = np.zeros_like(ra_err)
+    for i in range(len(ra_err)):
+        pa[i] = eepa_calc1(ra_err[i], dec_err[i], ra_dec_corr[i], anticw)
+
+    return pa
+
+
+def ellipse_shape_calc(M, m, pa, start_from_xaxis=False):
+    """Calculate the (x, y) position for an ellipse after rotation.
+
+    Parameters
+    ----------
+    M : float
+        major axis
+    m : floar
+        minor axis
+    pa : float
+        positional angle, degree reckoned from x- or y-axis.
+
+    Returns
+    -------
+    x1/y1 : ndarray of float
+    """
+
+    t = np.linspace(0, 2 * np.pi, 360)
+    x = M * cos(t)
+    y = m * sin(t)
+
+    if start_from_xaxis:
+        alpha = np.deg2rad(pa)
+    else:
+        alpha = np.deg2rad(90-pa)
+
+    x1 = x * cos(alpha) - y * sin(alpha)
+    y1 = x * sin(alpha) + y * cos(alpha)
+
+    return x1, y1
+
+
+def error_ellipse_calc_for_single(ra_err, dec_err, ra_dec_corr, anticw=False):
     """Calculate the ovrall formal uncertainty.
 
     ovrall formal uncertainty = sqrt(RA_err^2+Dec_err^2+C*RA_err*Dec_err)
@@ -78,8 +153,6 @@ def error_ellipse(ra_err, dec_err, ra_dec_corr, anticw=False):
 
     cov = ra_dec_corr * ra_err * dec_err
     cov_mat = np.array([[ra_err**2, cov], [cov, dec_err**2]])
-
-    from numpy.linalg import eig
 
     eig_val, eig_vec = eig(cov_mat)
 
@@ -117,7 +190,7 @@ def error_ellipse(ra_err, dec_err, ra_dec_corr, anticw=False):
     return M, m, pa
 
 
-def error_ellipse2(ra_err, dec_err, ra_dec_corr):
+def error_ellipse_calc_for_single2(ra_err, dec_err, ra_dec_corr):
     """Calculate the ovrall formal uncertainty.
 
     ovrall formal uncertainty = sqrt(RA_err^2+Dec_err^2+C*RA_err*Dec_err)
@@ -182,93 +255,37 @@ def error_ellipse_calc(ra_err, dec_err, ra_dec_corr, anticw=False):
         the position angle of the major axis of the error ellipse
     """
 
-    M = np.zeros_like(ra_err)
-    m = np.zeros_like(dec_err)
-    pa = np.zeros_like(ra_dec_corr)
+    if type(ra_err) == np.ndarray:
+        # Here I just check the type of ra_err and assume that ra_err, dec_err, and
+        # ra_dec_corr belongs to the same data type and has the same shape.
+        # I can do this just because this script is only used by myself
+        M = np.zeros_like(ra_err)
+        m = np.zeros_like(dec_err)
+        pa = np.zeros_like(ra_dec_corr)
+        for i in range(len(M)):
+            M[i], m[i], pa[i] = error_ellipse_calc_for_single(
+                ra_err[i], dec_err[i], ra_dec_corr[i], anticw)
 
-    for i in range(len(M)):
-        M[i], m[i], pa[i] = error_ellipse(
-            ra_err[i], dec_err[i], ra_dec_corr[i], anticw)
+    elif type(ra_err) in [astropy.table.column.Column, astropy.table.column.MaskedColumn]:
+        # Or Pandas type?
+        # astropy.table -> np.ndarray
+        ra_err = np.array(ra_err)
+        dec_err = np.array(dec_err)
+        ra_dec_corr = np.array(ra_dec_corr)
+
+        M = np.zeros_like(ra_err)
+        m = np.zeros_like(dec_err)
+        pa = np.zeros_like(ra_dec_corr)
+
+        for i in range(len(M)):
+            M[i], m[i], pa[i] = error_ellipse_calc_for_single(
+                ra_err[i], dec_err[i], ra_dec_corr[i], anticw)
+
+    else:
+        M, m, pa = error_ellipse_calc_for_single(
+            ra_err, dec_err, ra_dec_corr, anticw)
 
     return M, m, pa
-
-
-def eepa_calc(ra_err, dec_err, ra_dec_corr, anticw=False):
-    """Calculate the ovrall formal uncertainty.
-
-    ovrall formal uncertainty = sqrt(RA_err^2+Dec_err^2+C*RA_err*Dec_err)
-
-    Parameters
-    ----------
-    ra_err/dec_err : formal uncertainty of RA/Dec, usually in micro-as
-    ra_dec_corr : correlation coeffient between RA and Dec, unitless.
-
-    Returns
-    ----------
-    pa : the position angle of the major axis of the error ellipse
-    """
-
-    M, m, pa = error_ellipse(ra_err, dec_err, ra_dec_corr, anticw)
-
-    return pa
-
-
-def eepa_calc2(ra_err, dec_err, ra_dec_corr, anticw=False):
-    """Calculate the ovrall formal uncertainty.
-
-    ovrall formal uncertainty = sqrt(RA_err^2+Dec_err^2+C*RA_err*Dec_err)
-
-    Parameters
-    ----------
-    ra_err/dec_err : formal uncertainty of RA/Dec, usually in micro-as
-    ra_dec_corr : correlation coeffient between RA and Dec, unitless.
-
-    Returns
-    ----------
-    pa : the position angle of the major axis of the error ellipse
-    """
-
-    ##
-    # To check if their dimension is the same
-    ##
-
-    pa = np.zeros_like(ra_err)
-    for i in range(len(ra_err)):
-        pa[i] = eepa_calc1(ra_err[i], dec_err[i], ra_dec_corr[i], anticw)
-
-    return pa
-
-
-def ellipse_shape_calc(M, m, pa, start_from_xaxis=False):
-    """Calculate the (x, y) position for an ellipse after rotation.
-
-    Parameters
-    ----------
-    M : float
-        major axis
-    m : floar
-        minor axis
-    pa : float
-        positional angle, degree reckoned from x- or y-axis.
-
-    Returns
-    -------
-    x1/y1 : ndarray of float
-    """
-
-    t = np.linspace(0, 2 * np.pi, 360)
-    x = M * cos(t)
-    y = m * sin(t)
-
-    if start_from_xaxis:
-        alpha = np.deg2rad(pa)
-    else:
-        alpha = np.deg2rad(90-pa)
-
-    x1 = x * cos(alpha) - y * sin(alpha)
-    y1 = x * sin(alpha) + y * cos(alpha)
-
-    return x1, y1
 
 
 def main():

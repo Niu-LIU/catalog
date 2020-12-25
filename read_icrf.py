@@ -179,7 +179,7 @@ def read_icrf3(icrf3_file=None, wv="sx"):
                               "ra_err", "dec_err", "ra_dec_corr",
                               "mean_obs", "beg_obs", "end_obs",
                               "nb_sess", "nb_del"],
-                       col_starts=[5, 25, 35, 83, 98,
+                       col_starts=[0, 25, 35, 83, 98,
                                    108, 118, 127, 136, 145, 150],
                        col_ends=[20, 32, 35, 92, 106,
                                  114, 124, 133, 142, 148, 155])
@@ -203,14 +203,14 @@ def read_icrf3(icrf3_file=None, wv="sx"):
     icrf3["dec_err"] = icrf3["dec_err"].to(u.mas)
 
     # Calculate the semi-major axis of error ellipse
-    eema, eena, eepa = error_ellipse_calc(
+    pos_err_max, pos_err_min, pa = error_ellipse_calc(
         icrf3["ra_err"], icrf3["dec_err"], icrf3["ra_dec_corr"])
 
     # Add the semi-major axis of error ellipse to the table
-    eema = Column(eema, name="eema", unit=u.mas)
-    eena = Column(eena, name="eena", unit=u.mas)
-    eepa = Column(eepa, name="eepa", unit=u.deg)
-    icrf3.add_columns([eema, eena, eepa], indexes=[9, 9, 9])
+    pos_err_max = Column(pos_err_max, name="pos_err_max", unit=u.mas)
+    pos_err_min = Column(pos_err_min, name="pos_err_min", unit=u.mas)
+    pa = Column(pa, name="eepa", unit=u.deg)
+    icrf3.add_columns([pos_err_max, pos_err_min, pa], indexes=[9, 9, 9])
 
     return icrf3
 

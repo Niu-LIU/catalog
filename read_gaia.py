@@ -13,11 +13,12 @@ from astropy import units as u
 import numpy as np
 
 # My modules
-from .pos_err import error_ellipse_array
+from .pos_err import error_ellipse_calc
 from .get_dir import get_data_dir
+from .pos_diff import nor_sep_calc
 
 __all__ = ["read_dr1_qso", "read_dr2_iers", "read_dr2_allwise",
-           "read_edr3_crf", "read_edr3_agn"]
+           "read_edr3_agn", "read_edr3_crf", 'read_edr3_icrf_sou']
 
 
 # -----------------------------  FUNCTIONS -----------------------------
@@ -51,7 +52,7 @@ def read_dr1_qso(dr1_qso_file=None):
     gdr1["dec_err"].unit = u.mas
 
     # Calculate the semi-major axis of error ellipse
-    pos_err, pos_err_min, pa = error_ellipse_array(
+    pos_err, pos_err_min, pa = error_ellipse_calc(
         gdr1["ra_err"], gdr1["dec_err"], gdr1["ra_dec_corr"])
     del pos_err_min
 
@@ -98,14 +99,14 @@ def modify_dr2_iers(dr2_qso_file=None):
     gdr2.write(dr2_qso_file, overwrite=True)
 
 
-def read_dr2_iers(dr2_qso_file=None, errscaling=False):
+def read_dr2_iers(dr2_qso_file=None, err_scaling=False):
     """Read the positional information of Gaia DR2 auxiliary IERS catalog.
 
     Parameter
     ---------
     dr2_qso_file : string
         file name and path of the Gaia DR2 auxiliary IERS catalog
-    errscaling : boolean
+    err_scaling : boolean
         if true, scale gaia position error by chi2/ndf
 
     Return
@@ -154,7 +155,7 @@ def read_dr2_iers(dr2_qso_file=None, errscaling=False):
     gdr2.rename_column("pmdec_error", "pmdec_err")
 
     # Determine whether to scale the position error
-    if errscaling:
+    if err_scaling:
         # Degree of freedom = #observation - #parameter
         dof = gdr2["astrometric_n_good_obs_al"] - \
             gdr2["astrometric_params_solved"]
@@ -164,14 +165,14 @@ def read_dr2_iers(dr2_qso_file=None, errscaling=False):
         gdr2["dec_err"] = gdr2["dec_err"] * scale
 
     # Calculate the semi-major axis of error ellipse
-    pos_err, pos_err_min, pa = error_ellipse_array(
+    pos_err_max, pos_err_min, pa = error_ellipse_calc(
         gdr2["ra_err"], gdr2["dec_err"], gdr2["ra_dec_corr"])
-    del pos_err_min
 
     # Add the semi-major axis of error ellipse to the table
-    pos_err = Column(pos_err, name="pos_err", unit=u.mas)
+    pos_err_max = Column(pos_err_max, name="pos_err_max", unit=u.mas)
+    pos_err_min = Column(pos_err_min, name="pos_err_min", unit=u.mas)
     pa = Column(pa, name="eepa", unit=u.deg)
-    gdr2.add_columns([pos_err, pa], indexes=[9, 9])
+    gdr2.add_columns([pos_err_max, pos_err_min, pa], indexes=[9, 9, 9])
 
     return gdr2
 
@@ -194,187 +195,243 @@ def read_dr2_allwise(dr2_qso_file=None):
         data_dir = get_data_dir()
         dr2_qso_file = "{}/gaia/dr2/gaiadr2_qso_all.fits".format(data_dir)
 
-    gdr2 = read_dr2_iers(dr2_qso_file)
+    # Read Gaia DR2 quasar data
+    gdr2 = Table.read(dr2_qso_file)
 
-    # Read Gaia DR2 IERS quasar data
-    # gdr2 = Table.read(dr2_file)
+    # Rename the column names
+    gdr2.rename_column("ra_error", "ra_err")
+    gdr2.rename_column("dec_error", "dec_err")
+    gdr2.rename_column("parallax_error", "parallax_err")
+    gdr2.rename_column("pmra_error", "pmra_err")
+    gdr2.rename_column("pmdec_error", "pmdec_err")
 
-    # # Only the positional information are kept.
-    # gdr2.keep_columns(["iers_name",
-    #                    "source_id",
-    #                    "ra",
-    #                    "ra_error",
-    #                    "dec",
-    #                    "dec_error",
-    #                    "parallax",
-    #                    "parallax_error",
-    #                    "pmra",
-    #                    "pmra_error",
-    #                    "pmdec",
-    #                    "pmdec_error",
-    #                    "ra_dec_corr",
-    #                    "ra_parallax_corr",
-    #                    "ra_pmra_corr",
-    #                    "ra_pmdec_corr",
-    #                    "dec_parallax_corr",
-    #                    "dec_pmra_corr",
-    #                    "dec_pmdec_corr",
-    #                    "parallax_pmra_corr",
-    #                    "parallax_pmdec_corr",
-    #                    "pmra_pmdec_corr",
-    #                    "phot_g_mean_mag",
-    #                    "phot_bp_mean_mag",
-    #                    "phot_rp_mean_mag"])
+    # Calculate the semi-major axis of error ellipse
+    pos_err_max, pos_err_min, pa = error_ellipse_calc(
+        gdr2["ra_err"], gdr2["dec_err"], gdr2["ra_dec_corr"])
 
-    # # Rename the column names
-    # gdr2.rename_column("ra_error", "ra_err")
-    # gdr2.rename_column("dec_error", "dec_err")
-    # gdr2.rename_column("parallax_error", "parallax_err")
-    # gdr2.rename_column("pmra_error", "pmra_err")
-    # gdr2.rename_column("pmdec_error", "pmdec_err")
-    #
-    # # Calculate the semi-major axis of error ellipse
-    # pos_err = pos_err_calc(
-    #     gdr2["ra_err"], gdr2["dec_err"], gdr2["ra_dec_corr"])
-    #
-    # # Add the semi-major axis of error ellipse to the table
-    # gdr2.add_column(pos_err, name="pos_err", index=6)
-    # gdr2["pos_err"].unit = u.mas
+    # Add the semi-major axis of error ellipse to the table
+    pos_err_max = Column(pos_err_max, name="pos_err_max", unit=u.mas)
+    pos_err_min = Column(pos_err_min, name="pos_err_min", unit=u.mas)
+    pa = Column(pa, name="eepa", unit=u.deg)
+    gdr2.add_columns([pos_err_max, pos_err_min, pa])
 
     return gdr2
 
 
-def read_edr3_agn(data_file=None, astro_only=False):
-    """Read the positional information of Gaia EDR3 AGN catalogs
+def read_edr3_agn(edr3_qso_file=None, nor_pm=False):
+    """Read positional information for AGN in Gaia edr3 catalog.
 
     Parameter
     ---------
-    data_file : string
-        file name and path of the Gaia EDR3 AGN catalogs
+    edr3_qso_file : string
+        file name and path 
 
     Return
     ------
-    gedr3_tab : an astropy.Table object
+    gedr3 : an astropy.Table object
         data in the catalog
     """
 
-    if data_file is None:
+    if edr3_qso_file is None:
         data_dir = get_data_dir()
-        data_file = "{}/gaia/edr3/gedr3_agn.fits".format(data_dir)
+        edr3_qso_file = "{}/gaia/edr3/gedr3_agn.fits".format(data_dir)
 
-    # Read data
-    gedr3_tab = Table.read(data_file)
-
-    # # Only the positional information are kept.
-    # gedr3_tab.keep_columns(["iers_name",
-    #                    "source_id",
-    #                    "ra",
-    #                    "ra_error",
-    #                    "dec",
-    #                    "dec_error",
-    #                    "parallax",
-    #                    "parallax_error",
-    #                    "pmra",
-    #                    "pmra_error",
-    #                    "pmdec",
-    #                    "pmdec_error",
-    #                    "ra_dec_corr",
-    #                    "ra_parallax_corr",
-    #                    "ra_pmra_corr",
-    #                    "ra_pmdec_corr",
-    #                    "dec_parallax_corr",
-    #                    "dec_pmra_corr",
-    #                    "dec_pmdec_corr",
-    #                    "parallax_pmra_corr",
-    #                    "parallax_pmdec_corr",
-    #                    "pmra_pmdec_corr",
-    #                    "phot_g_mean_mag",
-    #                    "phot_bp_mean_mag",
-    #                    "phot_rp_mean_mag"])
+    # Read Gaia edr3 quasar data
+    gedr3 = Table.read(edr3_qso_file)
 
     # Rename the column names
-    gedr3_tab.rename_column("ra_error", "ra_err")
-    gedr3_tab.rename_column("dec_error", "dec_err")
-    gedr3_tab.rename_column("parallax_error", "parallax_err")
-    gedr3_tab.rename_column("pmra_error", "pmra_err")
-    gedr3_tab.rename_column("pmdec_error", "pmdec_err")
-
-#     # Calculate the semi-major axis of error ellipse
-#     pos_err = pos_err_calc(
-#         gedr3_tab["ra_err"], gedr3_tab["dec_err"], gedr3_tab["ra_dec_corr"])
-#
-#     # Add the semi-major axis of error ellipse to the table
-#     gedr3_tab.add_column(pos_err, name="pos_err", index=6)
-#     gedr3_tab["pos_err"].unit = u.mas
-
-    return gedr3_tab
-
-
-def read_edr3_crf(data_file=None, astro_only=False, type="All"):
-    """Read the positional information of Gaia EDR3 CRF source catalog
-
-    Parameter
-    ---------
-    data_file : string
-        file name and path of the Gaia-CRF3 catalogs
-
-    Return
-    ------
-    gedr3_tab : an astropy.Table object
-        data in the catalog
-    """
-
-    if data_file is None:
-        data_dir = get_data_dir()
-        data_file = "{}/gaia/edr3/gedr3_frame_rotator_source.fits".format(
-            data_dir)
-
-    # Read data
-    gedr3_tab = Table.read(data_file)
-
-    # # Only the positional information are kept.
-    # gedr3_tab.keep_columns(["iers_name",
-    #                    "source_id",
-    #                    "ra",
-    #                    "ra_error",
-    #                    "dec",
-    #                    "dec_error",
-    #                    "parallax",
-    #                    "parallax_error",
-    #                    "pmra",
-    #                    "pmra_error",
-    #                    "pmdec",
-    #                    "pmdec_error",
-    #                    "ra_dec_corr",
-    #                    "ra_parallax_corr",
-    #                    "ra_pmra_corr",
-    #                    "ra_pmdec_corr",
-    #                    "dec_parallax_corr",
-    #                    "dec_pmra_corr",
-    #                    "dec_pmdec_corr",
-    #                    "parallax_pmra_corr",
-    #                    "parallax_pmdec_corr",
-    #                    "pmra_pmdec_corr",
-    #                    "phot_g_mean_mag",
-    #                    "phot_bp_mean_mag",
-    #                    "phot_rp_mean_mag"])
-
-    # Rename the column names
-    gedr3_tab.rename_column("ra_error", "ra_err")
-    gedr3_tab.rename_column("dec_error", "dec_err")
-    gedr3_tab.rename_column("parallax_error", "parallax_err")
-    gedr3_tab.rename_column("pmra_error", "pmra_err")
-    gedr3_tab.rename_column("pmdec_error", "pmdec_err")
+    gedr3.rename_column("ra_error", "ra_err")
+    gedr3.rename_column("dec_error", "dec_err")
+    gedr3.rename_column("parallax_error", "parallax_err")
+    gedr3.rename_column("pmra_error", "pmra_err")
+    gedr3.rename_column("pmdec_error", "pmdec_err")
 
     # Calculate the semi-major axis of error ellipse
-#     pos_err = pos_err_calc(
-#         gedr3_tab["ra_err"], gedr3_tab["dec_err"], gedr3_tab["ra_dec_corr"])
+    pos_err_max, pos_err_min, pa = error_ellipse_calc(
+        gedr3["ra_err"], gedr3["dec_err"], gedr3["ra_dec_corr"])
 
     # Add the semi-major axis of error ellipse to the table
-#     gedr3_tab.add_column(pos_err, name="pos_err", index=6)
-#     gedr3_tab["pos_err"].unit = u.mas
+    pos_err_max = Column(pos_err_max, name="pos_err_max", unit=u.mas)
+    pos_err_min = Column(pos_err_min, name="pos_err_min", unit=u.mas)
+    pa = Column(pa, name="eepa", unit=u.deg)
+    gedr3.add_columns([pos_err_max, pos_err_min, pa])
 
-    return gedr3_tab
+    # Calculate the normalized proper motion
+    # This is a quantity similar to normalized separation
+    if nor_pm:
+        data = nor_sep_calc(gedr3["pmra"], gedr3["pmra_err"],
+                            gedr3["pmdec"], gedr3["pmdec_err"], gedr3["pmra_pmdec_corr"])
+        nor_pm = Column(data[3], name="nor_pm", unit=None)
+        gedr3.add_column(nor_pm)
+
+    return gedr3
+
+
+def read_edr3_crf(edr3_qso_file=None, table_type="all", pos_err_ellipse=False,
+                  nor_pm=False):
+    """Read data for Gaia-CRF3 sources in Gaia edr3 catalog.
+
+    Parameter
+    ---------
+    edr3_qso_file : string
+        file name and path 
+    table_type : string 
+        flag to tell if return subset, could be 'all', 'orientation', 'spin'
+    pos_err_ellipse: Boolean
+        flag to tell if calculate the position error ellipse parameters
+    nor_pm: boolean
+        flag to tell if calculate the normalized proper motion
+
+    Return
+    ------
+    gedr3 : an astropy.Table object
+        data in the catalog
+    """
+
+    if edr3_qso_file is None:
+        data_dir = get_data_dir()
+        edr3_qso_file = "{}/gaia/edr3/gedr3_frame_rotator_source.fits".format(
+            data_dir)
+
+    # Read Gaia edr3 quasar data
+    gedr3 = Table.read(edr3_qso_file)
+
+    # Check which subset should be used
+    if table_type == "orientation":
+        mask = (gedr3["considered_for_reference_frame_orientation"] == True)
+        gedr3 = gedr3[mask]
+        gedr3.keep_columns(['source_id',
+                            'ra',
+                            'ra_error',
+                            'dec',
+                            'dec_error',
+                            'parallax',
+                            'parallax_error',
+                            'parallax_over_error',
+                            'pm',
+                            'pmra',
+                            'pmra_error',
+                            'pmdec',
+                            'pmdec_error',
+                            'ra_dec_corr',
+                            'ra_parallax_corr',
+                            'ra_pmra_corr',
+                            'ra_pmdec_corr',
+                            'dec_parallax_corr',
+                            'dec_pmra_corr',
+                            'dec_pmdec_corr',
+                            'parallax_pmra_corr',
+                            'parallax_pmdec_corr',
+                            'pmra_pmdec_corr',
+                            'astrometric_n_obs_al',
+                            'astrometric_n_obs_ac',
+                            'astrometric_n_good_obs_al',
+                            'astrometric_n_bad_obs_al',
+                            'astrometric_gof_al',
+                            'astrometric_chi2_al',
+                            'astrometric_excess_noise',
+                            'astrometric_excess_noise_sig',
+                            'nu_eff_used_in_astrometry',
+                            'astrometric_matched_transits',
+                            'visibility_periods_used',
+                            'astrometric_sigma5d_max',
+                            'matched_transits',
+                            'new_matched_transits',
+                            'ruwe',
+                            'scan_direction_strength_k1',
+                            'scan_direction_strength_k2',
+                            'scan_direction_strength_k3',
+                            'scan_direction_strength_k4',
+                            'scan_direction_mean_k1',
+                            'scan_direction_mean_k2',
+                            'scan_direction_mean_k3',
+                            'scan_direction_mean_k4',
+                            'duplicated_source',
+                            'phot_g_mean_mag',
+                            'phot_bp_mean_mag',
+                            'phot_rp_mean_mag',
+                            'bp_rp',
+                            'bp_g',
+                            'g_rp',
+                            'l',
+                            'b',
+                            'ecl_lon',
+                            'ecl_lat',
+                            'used_for_reference_frame_orientation',
+                            'source_name_in_catalogue'])
+        # Rename the column names
+        gedr3.rename_column("ra_error", "ra_err")
+        gedr3.rename_column("dec_error", "dec_err")
+        gedr3.rename_column("parallax_error", "parallax_err")
+        gedr3.rename_column("pmra_error", "pmra_err")
+        gedr3.rename_column("pmdec_error", "pmdec_err")
+
+        # Calculate the semi-major axis of error ellipse for position
+        if pos_err_ellipse:
+            pos_err_max, pos_err_min, pa = error_ellipse_calc(
+                gedr3["ra_err"], gedr3["dec_err"], gedr3["ra_dec_corr"])
+
+            # Add the semi-major axis of error ellipse to the table
+            pos_err_max = Column(pos_err_max, name="pos_err_max", unit=u.mas)
+            pos_err_min = Column(pos_err_min, name="pos_err_min", unit=u.mas)
+            pa = Column(pa, name="eepa", unit=u.deg)
+            gedr3.add_columns([pos_err_max, pos_err_min, pa])
+
+    elif table_type == "spin":
+        mask = (gedr3["considered_for_reference_frame_spin"] == True)
+        gedr3 = gedr3[mask]
+
+        # Calculate the normalized proper motion
+        # This is a quantity similar to normalized separation
+        if nor_pm:
+            data = nor_sep_calc(gedr3["pmra"], gedr3["pmra_err"],
+                                gedr3["pmdec"], gedr3["pmdec_err"],
+                                gedr3["pmra_pmdec_corr"])
+            nor_pm = Column(data[3], name="nor_pm", unit=None)
+            gedr3.add_column(nor_pm)
+
+    return gedr3
+
+
+def read_edr3_icrf_sou(pos_err_ellipse=False):
+    """Read data for Gaia-CRF3 sources in Gaia edr3 catalog.
+
+    Parameter
+    ---------
+    None
+
+    Return
+    ------
+    gedr3 : an astropy.Table object
+        data in the catalog
+    """
+
+    data_dir = get_data_dir()
+    edr3_qso_file = "{}/gaia/edr3/gaia_edr3_icrf3_source.fits".format(
+        data_dir)
+
+    # Read Gaia edr3 quasar data
+    gedr3 = Table.read(edr3_qso_file)
+
+    # Rename the column names
+    gedr3.rename_column("ra_error", "ra_err")
+    gedr3.rename_column("dec_error", "dec_err")
+    gedr3.rename_column("parallax_error", "parallax_err")
+    gedr3.rename_column("pmra_error", "pmra_err")
+    gedr3.rename_column("pmdec_error", "pmdec_err")
+
+    if pos_err_ellipse:
+        # Calculate the semi-major axis of error ellipse for position
+        pos_err_max, pos_err_min, pa = error_ellipse_calc(
+            gedr3["ra_err"], gedr3["dec_err"], gedr3["ra_dec_corr"])
+
+        # Add the semi-major axis of error ellipse to the table
+        pos_err_max = Column(pos_err_max, name="pos_err_max", unit=u.mas)
+        pos_err_min = Column(pos_err_min, name="pos_err_min", unit=u.mas)
+        pa = Column(pa, name="eepa", unit=u.deg)
+        gedr3.add_columns([pos_err_max, pos_err_min, pa])
+
+    return gedr3
 
 
 if __name__ == "__main__":
